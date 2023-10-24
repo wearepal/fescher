@@ -22,8 +22,37 @@ dadaptation = "^3.1"
 black = "^23.9.1"
 ruff = "^0.0.291"
 
-[tool.ruff]
+[build-system]
+requires = ["poetry-core"]
+# build-backend = "poetry.core.masonry.api"
+build-backend = "maturin"
+
+[tool.black]
 line-length = 100
+target-version = ['py38']
+skip-string-normalization = true
+include = '\.pyi?$'
+exclude = '''
+(
+  /(
+      \.eggs         # exclude a few common directories in the
+    | \.git          # root of the project
+    | \.hg
+    | \.mypy_cache
+    | \.tox
+    | \.venv
+    | _build
+    | buck-out
+    | build
+    | dist
+    | conduit/hydra
+  )/
+  | foo.py           # also separately exclude a file named foo.py in
+                     # the root of the project
+)
+'''
+[tool.ruff]
+line-length = 88 # for import sorting
 select = [
     "E", # pycodestyle
     "F", # pyflakes
@@ -39,12 +68,77 @@ select = [
 ]
 ignore = [
     "E501",    # line length
+    "E721",    # `isinstance()` vs `type() == type()`
+    "E741",    # ambiguous variable name
     "F541",    # f-string without placeholder
     "PLW2901", # overwriting loop variable
     "PLC0105", # covariant typevars have to end in "_co"
 ]
 target-version = "py38"
 
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+[tool.ruff.per-file-ignores]
+"__init__.py" = ["F403"]
+
+[tool.ruff.isort]
+known-third-party = [
+    "PIL",
+    "albumentations",
+    "attr",
+    "cv2",
+    "ethicml",
+    "hydra",
+    "numpy",
+    "omegaconf",
+    "pandas",
+    "pytest",
+    "pytorch_lightning",
+    "ranzen",
+    "requests",
+    "rich",
+    "sklearn",
+    "torch",
+    "torchaudio",
+    "torchmetrics",
+    "torchvision",
+    "tqdm",
+]
+extra-standard-library = ["typing_extensions"]
+no-lines-before = ["future", "standard-library"]
+force-sort-within-sections = true
+split-on-trailing-comma = false
+classes = ["MISSING", "NICO", "PACS", "SSRP", "ISIC"]
+case-sensitive = true
+
+[tool.pyright]
+typeCheckingMode = "strict"
+pythonVersion = "3.8"
+reportMissingTypeArgument = "none"
+reportCallInDefaultInitializer = "warning"
+reportPropertyTypeMismatch = "none"
+reportUninitializedInstanceVariable = "warning"
+reportPrivateUsage = "none"
+reportUnnecessaryTypeIgnoreComment = "warning"
+reportUnnecessaryIsInstance = "warning"
+reportUnnecessaryCast = "warning"
+reportUnnecessaryComparison = "warning"
+# these errors are a bit annoying
+reportUnknownMemberType = "none"
+reportUnknownVariableType = "none"
+reportUnknownParameterType = "none"
+reportUnknownArgumentType = "none"
+ignore = ["conduit/hydra/**"]
+
+[tool.pytest.ini_options]
+python_files = "*.py"
+python_classes = "Test"
+python_functions = "test_*"
+addopts = ["--import-mode=importlib"]
+# Ignore deprecation warnings coming from pytest/pkg_resources
+# that pollute the console output when testing.
+filterwarnings = [
+    'ignore::DeprecationWarning:_pytest.*:',
+    'ignore::DeprecationWarning:pkg_resources.*:',
+]
+
+[tool.maturin]
+features = ["pyo3/extension-module"]
