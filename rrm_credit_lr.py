@@ -1,18 +1,16 @@
 from __future__ import annotations
-
 from dataclasses import dataclass, field
 from typing import Generic, TypeAlias, TypeVar, Union, cast
 
+from loguru import logger
+import lr
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
 import polars as pl
-import whynot.gym as gym
-from loguru import logger
 from tqdm import tqdm
+import whynot.gym as gym
 from whynot.simulators.credit import Config, CreditData, State
-
-import lr
 
 FloatArray: TypeAlias = npt.NDArray[np.floating]
 X = TypeVar("X", bound=Union[pl.Series, pl.DataFrame, FloatArray])
@@ -67,9 +65,7 @@ def repeated_risk_minimization(
 
         # Evaluate loss and accuracy on the new distribution
         record.loss_start.append(
-            lr.evaluate_logistic_loss(
-                x=features_strat, y=labels, theta=theta, l2_penalty=l2_penalty
-            )
+            lr.logistic_loss(x=features_strat, y=labels, weights=theta, l2_penalty=l2_penalty)
         )
         record.acc_start.append(((features_strat.dot(theta) > 0) == labels).mean())
 
@@ -83,10 +79,10 @@ def repeated_risk_minimization(
 
         # Evaluate loss and accuracy on the strategic distribution after training
         record.loss_end.append(
-            lr.evaluate_logistic_loss(
+            lr.logistic_loss(
                 x=features_strat,
                 y=labels,
-                theta=theta_new,
+                weights=theta_new,
                 l2_penalty=l2_penalty,
             )
         )
@@ -115,9 +111,7 @@ if __name__ == "__main__":
     ds = initial_state.values()
     base_x, base_y = ds["features"], ds["labels"]
     num_agents, num_features = base_x.shape
-    logger.info(
-        f"The dataset is made up of {num_agents} agents and {num_features} features."
-    )
+    logger.info(f"The dataset is made up of {num_agents} agents and {num_features} features.")
 
     # Fit a rudimentary LR model to the data.
     l2_penalty = 1.0 / num_agents
@@ -127,9 +121,7 @@ if __name__ == "__main__":
         l2_penalty=l2_penalty,
     )
     baseline_acc = (((base_x @ baseline_theta) > 0) == base_y).mean()
-    logger.info(
-        f"Baseline logistic regresion model accuracy: {100 * baseline_acc:.2f}%"
-    )
+    logger.info(f"Baseline logistic regresion model accuracy: {100 * baseline_acc:.2f}%")
 
     epsilon_list = [
         1,
@@ -235,9 +227,7 @@ if __name__ == "__main__":
 
     ax.set_title("Convergence in Domain for Repeated Risk Minimization", fontsize=18)
     ax.set_xlabel("Iteration $t$", fontsize=18)
-    ax.set_ylabel(
-        r"Distance Between Iterates: $\|\theta_{t+1} - \theta_{t}\|_2 $", fontsize=14
-    )
+    ax.set_ylabel(r"Distance Between Iterates: $\|\theta_{t+1} - \theta_{t}\|_2 $", fontsize=14)
     ax.tick_params(labelsize=18)
     plt.legend(fontsize=18)
     plt.show()

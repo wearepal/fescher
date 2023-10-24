@@ -5,9 +5,9 @@ from typing import TypeAlias
 import numpy as np
 import numpy.typing as npt
 import polars as pl
-from sklearn import preprocessing
+from sklearn import preprocessing  # type: ignore
 
-from src.credit.simulator import State
+from src.env.state import State
 
 __all__ = ["CreditData"]
 
@@ -18,7 +18,7 @@ class CreditData:
     """Class to lazily load the credit dataset."""
 
     def __init__(self, seed: int | None = None) -> None:
-        self.filepath = Path(__file__, "credit_data").with_suffix(".zip")
+        self.filepath = (Path(__file__).parent / "credit_data").with_suffix(".zip")
         self._features = None
         self._labels = None
         self.seed = seed
@@ -54,8 +54,15 @@ class CreditData:
 
     def load(self) -> tuple[FloatArray, FloatArray]:
         """Load, preprocess and class-balance the credit data."""
+        from zipfile import ZipFile
+
         rng = np.random.default_rng(seed=self.seed)
-        data = pl.read_csv(self.filepath)
+        data = pl.read_csv(
+            ZipFile(self.filepath).open("credit_data.csv", mode='r').read(),
+        )
+        # Replace "NA" with 'null'
+        data = data.with_columns(pl.when(pl.col(pl.Utf8) != "NA").then(pl.col(pl.Utf8)).keep_name())
+        # Drop null-containing rows
         data = data.drop_nulls()
         outcomes = data.drop_in_place("SeriousDlqin2yrs")
         # zero mean, unit variance

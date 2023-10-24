@@ -1,32 +1,15 @@
 import copy
-from dataclasses import dataclass, fields
-from typing import Generic, Protocol, TypeVar
+from dataclasses import dataclass, replace
+from typing import Generic, TypeVar
 
 import numpy as np
-import numpy.typing as npt
-from typing_extensions import TypeAlias, override
 
 from src.conftest import TESTING
-from src.credit.agent import Agent, Intervention, LrAgent, NoIntervention
+from src.env.response import Response
+from src.env.state import State
+from src.types import Action
 
-Features: TypeAlias = npt.NDArray[np.floating]
-Labels: TypeAlias = npt.NDArray[np.floating]
-
-__all__ = ["State", "simulate", "Rollout", "Simulator", "StateTransitionFn"]
-
-
-@dataclass(kw_only=True)
-class State:
-    """Simulative state."""
-
-    features: Features
-    labels: Labels
-
-    def __len__(self) -> int:
-        return len(fields(self))
-
-    def asdict(self) -> dict[str, npt.NDArray[np.floating]]:
-        return {field.name: getattr(self, field.name) for field in fields(self)}
+__all__ = ["simulate", "Rollout", "Simulator"]
 
 
 @dataclass(kw_only=True)
@@ -43,8 +26,11 @@ class Rollout:
     def __post_init__(self) -> None:
         """Error checking called after the constructor."""
         if len(self.states) != len(self.times):
-            msg = "Input states and times must be the same length!  {} \neq {}"
-            raise ValueError(msg.format(len(self.states), len(self.times)))
+            msg = (
+                "Input states and times must be the same length!"
+                f" {len(self.states)} \neq {len(self.times)}",
+            )
+            raise ValueError(msg)
 
     def __getitem__(self, time: int) -> State:
         """Return the state closest to the given time."""
@@ -72,32 +58,12 @@ class Rollout:
         return self.times[-1]
 
 
-class StateTransitionFn(Protocol):
-    def __call__(self, *, state: State, time: int) -> State:
-        ...
-
-
-A = TypeVar("A", bound=Agent)
-
-
-@dataclass(kw_only=True)
-class CreditSTF(StateTransitionFn, Generic[A]):
-    agent: A
-    intervention: Intervention[A]
-
-    @override
-    def __call__(self, *, state: State, time: int) -> State:
-        agent = self.intervention(time=time, agent=self.agent)
-        features = agent.update(features=state.features)
-        state = State(features=features, labels=state.features)
-        return state
-
-
 def simulate(
     *,
     state: State,
     steps: int,
-    state_transition_fn: StateTransitionFn,
+    response: Response,
+    action: Action,
     start_time: int = 0,
     memory: bool = False,
 ) -> Rollout:
@@ -109,46 +75,47 @@ def simulate(
     state = copy.deepcopy(state)
     for time in range(start_time, start_time + steps):
         state = state if memory else initial_state
-        state = state_transition_fn(state=state, time=time)
+        features = response(features=state.features, action=action)
+        state = replace(state, features=features)
         states.append(state)
         times.append(time + 1)
 
     return Rollout(states=states, times=times)
 
 
-STF = TypeVar("STF", bound=StateTransitionFn)
+R = TypeVar("R", bound=Response)
 
 
 @dataclass(kw_only=True)
-class Simulator(Generic[STF]):
-    state_transition_fn: STF
+class Simulator(Generic[R]):
+    response: R
     memory: bool = False
 
-    def __call__(self, *, state: State, steps: int, start_time: int = 0) -> Rollout:
+    def __call__(self, *, state: State, action: Action, steps: int, start_time: int = 0) -> Rollout:
         return simulate(
             state=state,
             steps=steps,
-            state_transition_fn=self.state_transition_fn,
+            action=action,
+            response=self.response,
             memory=self.memory,
             start_time=start_time,
         )
 
 
 if TESTING:
+    from src.env.response import LinearResponse
 
     def test_dynamics_initial_state() -> None:
         """For ODE simulators, ensure the iniitial_state is returned by reference in run."""
-        from src.credit.loader import CreditData
+        from src.loader.credit import CreditData
 
         ds = CreditData(seed=0)
         initial_state = State(features=ds.features, labels=ds.labels)
-        stf = CreditSTF(
-            agent=LrAgent(),
-            intervention=NoIntervention(),
-        )
+        action = np.random.uniform(low=0, high=1, size=(initial_state.num_features,))
         run = simulate(
             state=initial_state,
-            state_transition_fn=stf,
+            action=action,
+            response=LinearResponse(epsilon=1.0),
             start_time=0,
             steps=30,
             memory=False,

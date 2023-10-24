@@ -1,25 +1,82 @@
 """Utility functions for performative prediction demo."""
 from __future__ import annotations
-
+from dataclasses import dataclass, field
 from typing import TypeAlias
+from typing_extensions import Self
 
 import numpy as np
 import numpy.typing as npt
+from ranzen import some
+from scipy.special import expit  # type: ignore
 
 FloatArray: TypeAlias = npt.NDArray[np.floating]
 
 __all__ = [
-    "evaluate_logistic_loss",
+    "logistic_loss",
     "fit_lr_with_gd",
+    "Lr",
 ]
 
 
-def evaluate_logistic_loss(
+@dataclass(kw_only=True)
+class Lr:
+    #: L2 penalty on the logistic regression loss
+    l2_penalty: float = 0.0
+    #: Parameters for logistic-regression classifier used by the institution
+    _weights: FloatArray | None = field(init=False, default=None)
+
+    @property
+    def weights(self) -> FloatArray:
+        if self._weights is None:
+            raise AttributeError("LR model must be fit before weights can be retrieved.")
+        return self.weights
+
+    @weights.setter
+    def weights(self, value: FloatArray) -> None:
+        self._weights = value
+
+    def logits(self, features: FloatArray) -> FloatArray:
+        return features @ self.weights
+
+    def probs(self, features: FloatArray) -> FloatArray:
+        return expit(features @ self.weights)
+
+    def fit(
+        self,
+        *,
+        x: FloatArray,
+        y: FloatArray,
+        tol: float = 1e-7,
+    ) -> Self:
+        self._weights = fit_lr_with_gd(
+            x=x,
+            y=y,
+            tol=tol,
+            l2_penalty=self.l2_penalty,
+            theta_init=self._weights,
+        )
+        return self
+
+    def loss(
+        self,
+        *,
+        x: FloatArray,
+        y: FloatArray,
+    ) -> float:
+        return logistic_loss(
+            x=x,
+            y=y,
+            weights=self.weights,
+            l2_penalty=self.l2_penalty,
+        )
+
+
+def logistic_loss(
     *,
     x: FloatArray,
     y: FloatArray,
-    theta: FloatArray,
-    l2_penalty: float,
+    weights: FloatArray,
+    l2_penalty: float = 0.0,
 ) -> float:
     """Compute the l2-penalized logistic loss function
 
@@ -42,10 +99,10 @@ def evaluate_logistic_loss(
     """
     n = x.shape[0]
 
-    logits = x @ theta
+    logits = x @ weights
     log_likelihood = 1.0 / n * np.sum(-1.0 * (y * logits) + np.log(1 + np.exp(logits)))
 
-    regularization = (l2_penalty / 2.0) * np.linalg.norm(theta[:-1]) ** 2
+    regularization = (l2_penalty / 2.0) * np.linalg.norm(weights[:-1]) ** 2
 
     return log_likelihood + regularization
 
@@ -91,16 +148,13 @@ def fit_lr_with_gd(
     # Optimal initial learning rate
     eta_init = 1.0 / (smoothness + l2_penalty)
 
-    if theta_init is not None:
-        theta = np.copy(theta_init)
-    else:
-        theta = np.zeros(d)
+    theta = np.copy(theta_init) if some(theta_init) else np.zeros(d)
 
     # Evaluate loss at initialization
-    prev_loss = evaluate_logistic_loss(
+    prev_loss = logistic_loss(
         x=x,
         y=y,
-        theta=theta,
+        weights=theta,
         l2_penalty=l2_penalty,
     )
 
@@ -113,17 +167,17 @@ def fit_lr_with_gd(
         # take gradients
         exp_tx = np.exp(x @ theta)
         c = exp_tx / (1 + exp_tx) - y
-        gradient = 1.0 / n * np.sum(
-            x * c[:, np.newaxis], axis=0
-        ) + l2_penalty * np.append(theta[:-1], 0)
+        gradient = 1.0 / n * np.sum(x * c[:, np.newaxis], axis=0) + l2_penalty * np.append(
+            theta[:-1], 0
+        )
 
         new_theta = theta - eta * gradient
 
         # compute new loss
-        loss = evaluate_logistic_loss(
+        loss = logistic_loss(
             x=x,
             y=y,
-            theta=new_theta,
+            weights=new_theta,
             l2_penalty=l2_penalty,
         )
 
