@@ -8,13 +8,13 @@ from ranzen import unwrap_or
 from src.types import FloatArray, IntArray
 
 __all__ = [
-    "Response",
+    "ResponseFn",
     "linear_response",
     "LinearResponse",
 ]
 
 
-class Response(Protocol):
+class ResponseFn(Protocol):
     def __call__(
         self,
         *,
@@ -39,7 +39,7 @@ def linear_response(
 
 
 @dataclass(kw_only=True)
-class LinearResponse(Response):
+class LinearResponse(ResponseFn):
     changeable_features: IntArray | slice | None = None
     epsilon: float = 1.0
 

@@ -1,15 +1,13 @@
 """Utility functions for performative prediction demo."""
 from __future__ import annotations
 from dataclasses import dataclass, field
-from typing import TypeAlias
 from typing_extensions import Self
 
 import numpy as np
-import numpy.typing as npt
 from ranzen import some
 from scipy.special import expit  # type: ignore
 
-FloatArray: TypeAlias = npt.NDArray[np.floating]
+from src.types import FloatArray, IntArray
 
 __all__ = [
     "logistic_loss",
@@ -20,16 +18,14 @@ __all__ = [
 
 @dataclass(kw_only=True)
 class Lr:
-    #: L2 penalty on the logistic regression loss
     l2_penalty: float = 0.0
-    #: Parameters for logistic-regression classifier used by the institution
     _weights: FloatArray | None = field(init=False, default=None)
 
     @property
     def weights(self) -> FloatArray:
         if self._weights is None:
-            raise AttributeError("LR model must be fit before weights can be retrieved.")
-        return self.weights
+            raise AttributeError("LR model must be fit before its weights can be retrieved.")
+        return self._weights
 
     @weights.setter
     def weights(self, value: FloatArray) -> None:
@@ -38,14 +34,20 @@ class Lr:
     def logits(self, features: FloatArray) -> FloatArray:
         return features @ self.weights
 
+    def preds(self, features: FloatArray) -> IntArray:
+        return (self.logits(features) > 0).astype(np.uint8)
+
+    def acc(self, *, features: FloatArray, labels: IntArray) -> float:
+        return (self.preds(features) == labels).mean()
+
     def probs(self, features: FloatArray) -> FloatArray:
-        return expit(features @ self.weights)
+        return expit(self.logits(features))
 
     def fit(
         self,
         *,
         x: FloatArray,
-        y: FloatArray,
+        y: IntArray,
         tol: float = 1e-7,
     ) -> Self:
         self._weights = fit_lr_with_gd(
@@ -61,7 +63,7 @@ class Lr:
         self,
         *,
         x: FloatArray,
-        y: FloatArray,
+        y: IntArray,
     ) -> float:
         return logistic_loss(
             x=x,
@@ -74,28 +76,19 @@ class Lr:
 def logistic_loss(
     *,
     x: FloatArray,
-    y: FloatArray,
+    y: IntArray,
     weights: FloatArray,
     l2_penalty: float = 0.0,
 ) -> float:
     """Compute the l2-penalized logistic loss function
 
-    Parameters
-    ----------
-        X: np.ndarray
-            A [num_samples, num_features] matrix of features. The last
-            feature dimension is assumed to be the bias term.
-        Y: np.ndarray
-            A [num_samples] vector of binary labels.
-        theta: np.ndarray
-            A [num_features] vector of classifier parameters
-        l2_penalty: float
-            Regularization coefficient. Use l2_penalty=0 for no regularization.
+    :param X: A [num_samples, num_features] matrix of features. The last
+        feature dimension is assumed to be the bias term.
+    :param y: A [num_samples] vector of binary labels.
+    :param theta: A [num_features] vector of classifier parameters
+    :param l2_penalty: egularization coefficient. Set to 0 to disable regularization.
 
-    Returns
-    -------
-        loss: float
-
+    :returns: logistic loss.
     """
     n = x.shape[0]
 
@@ -110,33 +103,24 @@ def logistic_loss(
 def fit_lr_with_gd(
     *,
     x: FloatArray,
-    y: FloatArray,
+    y: IntArray,
     l2_penalty: float,
     tol: float = 1e-7,
     theta_init: FloatArray | None = None,
 ) -> FloatArray:
     """Fit a logistic regression model via gradient descent.
 
-    Parameters
-    ----------
-        X: np.ndarray
-            A [num_samples, num_features] matrix of features.
-            The last feature dimension is assumed to be the bias term.
-        Y: np.ndarray
-            A [num_samples] vector of binary labels.
-        l2_penalty: float
-            Regularization coefficient. Use l2_penalty=0 for no regularization.
-        tol: float
-            Stopping criteria for gradient descent
-        theta_init: np.ndarray
-            A [num_features] vector of classifier parameters to use a
-            initialization
+    :param y: A [num_samples, num_features] matrix of features.
+    The last feature dimension is assumed to be the bias term.
 
-    Returns
-    -------
-        theta: np.ndarray
-            The optimal [num_features] vector of classifier parameters.
+    :param y: A [num_samples] vector of binary labels.
+    :param l2_penalty: Regularization coefficient. Use l2_penalty=0 for no regularization.
+    :param tol:Stopping criteria for gradient descent
 
+    :param theta_init: A [num_features] vector of classifier parameters to use a
+        initialization
+
+    :returns: The optimal [num_features] vector of classifier parameters.
     """
     x = np.copy(x)
     y = np.copy(y)

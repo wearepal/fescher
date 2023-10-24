@@ -2,8 +2,8 @@ from dataclasses import dataclass
 from typing import Protocol
 from typing_extensions import TypeAlias, override
 
-from src.env.state import State
-from src.lr import logistic_loss
+from src.dynamics.state import State
+from src.models.lr import logistic_loss
 from src.types import FloatArray
 
 Features: TypeAlias = FloatArray

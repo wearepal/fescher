@@ -5,8 +5,8 @@ from typing import Generic, TypeVar
 import numpy as np
 
 from src.conftest import TESTING
-from src.env.response import Response
-from src.env.state import State
+from src.dynamics.response import ResponseFn
+from src.dynamics.state import State
 from src.types import Action
 
 __all__ = ["simulate", "Rollout", "Simulator"]
@@ -16,8 +16,8 @@ __all__ = ["simulate", "Rollout", "Simulator"]
 class Rollout:
     r"""Encapsulate a trajectory from a dynamical system simulator.
 
-    :states: Sequence of states :math:`x_{t_1}, x_{t_2}, \dots` produced by the simulator.
-    :times: Sequence of sampled times :math:`{t_1},{t_2}, \dots` at which the states were recorded.
+    :param states: Sequence of states :math:`x_{t_1}, x_{t_2}, \dots` produced by the simulator.
+    :param times: Sequence of sampled times :math:`{t_1},{t_2}, \dots` at which the states were recorded.
     """
 
     states: list[State]
@@ -62,7 +62,7 @@ def simulate(
     *,
     state: State,
     steps: int,
-    response: Response,
+    response: ResponseFn,
     action: Action,
     start_time: int = 0,
     memory: bool = False,
@@ -83,7 +83,7 @@ def simulate(
     return Rollout(states=states, times=times)
 
 
-R = TypeVar("R", bound=Response)
+R = TypeVar("R", bound=ResponseFn)
 
 
 @dataclass(kw_only=True)
@@ -103,10 +103,9 @@ class Simulator(Generic[R]):
 
 
 if TESTING:
-    from src.env.response import LinearResponse
+    from src.dynamics.response import LinearResponse
 
-    def test_dynamics_initial_state() -> None:
-        """For ODE simulators, ensure the iniitial_state is returned by reference in run."""
+    def test_simulator() -> None:
         from src.loader.credit import CreditData
 
         ds = CreditData(seed=0)

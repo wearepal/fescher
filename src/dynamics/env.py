@@ -5,18 +5,16 @@ from typing_extensions import override
 from gymnasium.core import Env, ObsType
 
 from src.conftest import TESTING
-from src.env.reward import RewardFn
-from src.env.simulator import Simulator, State
+from src.dynamics.reward import RewardFn
+from src.dynamics.simulator import Simulator, State
 from src.types import FloatArray
 
-__all__ = ["OdeEnv"]
+__all__ = ["DynamicEnv"]
 
 StepOutput: TypeAlias = tuple[ObsType, SupportsFloat, bool, bool, dict[str, Any]]
 
 
-class OdeEnv(Env):
-    """Environment builder for simulators derived from dynamical systems."""
-
+class DynamicEnv(Env):
     def __init__(
         self,
         *,
@@ -78,8 +76,8 @@ class OdeEnv(Env):
 if TESTING:
     import numpy as np
 
-    from src.env.response import LinearResponse
-    from src.env.reward import LogisticReward
+    from src.dynamics.response import LinearResponse
+    from src.dynamics.reward import LogisticReward
     from src.loader.credit import CreditData
 
     def test_env_dynamics() -> None:
@@ -87,7 +85,7 @@ if TESTING:
         initial_state = State(features=ds.features, labels=ds.labels)
         simulator = Simulator(response=LinearResponse(), memory=False)
 
-        env = OdeEnv(
+        env = DynamicEnv(
             initial_state=initial_state,
             simulator=simulator,
             reward_fn=LogisticReward(),

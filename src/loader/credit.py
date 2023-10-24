@@ -1,17 +1,14 @@
 """Load and preprocess Kaggle credit dataset."""
 from pathlib import Path
-from typing import TypeAlias
 
 import numpy as np
-import numpy.typing as npt
 import polars as pl
 from sklearn import preprocessing  # type: ignore
 
-from src.env.state import State
+from src.dynamics.state import State
+from src.types import FloatArray, IntArray
 
 __all__ = ["CreditData"]
-
-FloatArray: TypeAlias = npt.NDArray[np.floating]
 
 
 class CreditData:
@@ -36,7 +33,7 @@ class CreditData:
         return np.copy(self._features)
 
     @property
-    def labels(self) -> FloatArray:
+    def labels(self) -> IntArray:
         """Return the dataset labels."""
         if self._labels is None:
             self._features, self._labels = self.load()

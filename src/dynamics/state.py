@@ -1,16 +1,21 @@
 from dataclasses import dataclass, fields
+from typing import TypedDict, cast
 from typing_extensions import TypeAlias
 
 from gymnasium import spaces
 import numpy as np
-import numpy.typing as npt
 
-from src.types import FloatArray
+from src.types import FloatArray, IntArray
 
 Features: TypeAlias = FloatArray
-Labels: TypeAlias = FloatArray
+Labels: TypeAlias = IntArray
 
 __all__ = ["State"]
+
+
+class StateDict(TypedDict):
+    features: Features
+    labels: Labels
 
 
 @dataclass(kw_only=True)
@@ -27,8 +32,11 @@ class State:
     def num_features(self) -> int:
         return self.features.shape[-1]
 
-    def asdict(self) -> dict[str, npt.NDArray[np.floating]]:
-        return {field.name: getattr(self, field.name) for field in fields(self)}
+    def asdict(self) -> StateDict:
+        return cast(
+            StateDict,
+            {field.name: getattr(self, field.name) for field in fields(self)},
+        )
 
     @property
     def action_space(self) -> spaces.Box:
