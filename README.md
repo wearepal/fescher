@@ -1,2 +1,2 @@
 # Fescher
-A foray into the world of performative prediction
+"A *fesch* package for investigating the Escherian problem of **performative prediction** (under fairness constraints)"
