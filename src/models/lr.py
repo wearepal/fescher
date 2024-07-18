@@ -26,9 +26,7 @@ class Lr:
     @property
     def weights(self) -> FloatArray:
         if self._weights is None:
-            raise AttributeError(
-                "LR model must be fit before its weights can be retrieved."
-            )
+            raise AttributeError("LR model must be fit before its weights can be retrieved.")
         return self._weights
 
     @weights.setter
@@ -155,9 +153,9 @@ def fit_lr_with_gd(
         # take gradients
         exp_tx = np.exp(x @ theta)
         c = exp_tx / (1 + exp_tx) - y
-        gradient = 1.0 / n * np.sum(
-            x * c[:, np.newaxis], axis=0
-        ) + l2_penalty * np.append(theta[:-1], 0)
+        gradient = 1.0 / n * np.sum(x * c[:, np.newaxis], axis=0) + l2_penalty * np.append(
+            theta[:-1], 0
+        )
 
         new_theta = theta - eta * gradient
 

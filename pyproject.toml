@@ -33,7 +33,10 @@ build-backend = "hatchling.build"
 
 [tool.rye]
 managed = true
-dev-dependencies = ["pytest>=8.2.2"]
+dev-dependencies = [
+    "pytest>=8.2.2",
+    "python-type-stubs @ git+https://github.com/wearepal/python-type-stubs@95a26e5",
+]
 
 [tool.hatch.metadata]
 allow-direct-references = true
@@ -130,4 +133,5 @@ reportUnknownVariableType = "none"
 reportUnknownParameterType = "none"
 reportUnknownArgumentType = "none"
 reportUnknownLambdaType = "none"
-ignore = ["conduit/hydra/**"]
+venvPath = "."
+venv = ".venv"

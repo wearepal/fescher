@@ -87,9 +87,7 @@ class Simulator:
     response: Response
     memory: bool = False
 
-    def __call__(
-        self, *, state: State, action: Action, steps: int, start_time: int = 0
-    ) -> Rollout:
+    def __call__(self, *, state: State, action: Action, steps: int, start_time: int = 0) -> Rollout:
         return simulate(
             state=state,
             steps=steps,
@@ -108,9 +106,7 @@ if TESTING:
 
         ds = CreditData(seed=0)
         initial_state = State(features=ds.features, labels=ds.labels)
-        action = np.random.default_rng(0).uniform(
-            low=0, high=1, size=(initial_state.num_features,)
-        )
+        action = np.random.default_rng(0).uniform(low=0, high=1, size=(initial_state.num_features,))
         run = simulate(
             state=initial_state,
             action=action,

@@ -1,6 +1,7 @@
+from collections.abc import Callable
 from dataclasses import dataclass
 from functools import partial
-from typing import Callable, TypeVar
+from typing import TypeVar
 
 from src.types import FloatArray
 

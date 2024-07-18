@@ -60,14 +60,10 @@ class CreditData:
         )
         data = data.drop("")
         # Replace "NA" with 'null'
-        data = data.with_columns(
-            pl.when(pl.col(pl.Utf8) != "NA").then(pl.col(pl.Utf8)).name.keep()
-        )
+        data = data.with_columns(pl.when(pl.col(pl.Utf8) != "NA").then(pl.col(pl.Utf8)).name.keep())
         # Drop null-containing rows
         data = data.drop_nulls()
-        data = data.cast(
-            {f"{col}": pl.Int64 for col in data.columns if data[col].dtype == pl.Utf8}
-        )
+        data = data.cast({f"{col}": pl.Int64 for col in data.columns if data[col].dtype == pl.Utf8})
         outcomes = data.drop_in_place("SeriousDlqin2yrs")
         # zero mean, unit variance
         features = preprocessing.scale(data.to_numpy())

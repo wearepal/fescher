@@ -16,8 +16,6 @@ contourpy==1.2.1
     # via matplotlib
 cycler==0.12.1
     # via matplotlib
-dadaptation==3.2
-    # via fescher
 farama-notifications==0.0.4
     # via gymnasium
 fonttools==4.53.1
@@ -33,7 +31,6 @@ kiwisolver==1.4.5
 loguru==0.7.2
     # via fescher
 matplotlib==3.9.1
-    # via fescher
     # via seaborn
 numpy==1.26.4
     # via contourpy
@@ -61,6 +58,7 @@ pytest==8.2.2
 python-dateutil==2.9.0.post0
     # via matplotlib
     # via pandas
+python-type-stubs @ git+https://github.com/wearepal/python-type-stubs@95a26e597ca5e3cc45ff76b435b537202aedd9c7
 pytz==2024.1
     # via pandas
 ranzen==2.5.1

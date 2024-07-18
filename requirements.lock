@@ -16,8 +16,6 @@ contourpy==1.2.1
     # via matplotlib
 cycler==0.12.1
     # via matplotlib
-dadaptation==3.2
-    # via fescher
 farama-notifications==0.0.4
     # via gymnasium
 fonttools==4.53.1
@@ -31,7 +29,6 @@ kiwisolver==1.4.5
 loguru==0.7.2
     # via fescher
 matplotlib==3.9.1
-    # via fescher
     # via seaborn
 numpy==1.26.4
     # via contourpy
