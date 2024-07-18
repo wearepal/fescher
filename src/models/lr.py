@@ -11,17 +11,15 @@ from scipy.special import expit  # type: ignore
 
 from src.types import FloatArray, IntArray
 
-__all__ = [
-    "logistic_loss",
-    "fit_lr_with_gd",
-    "Lr",
-]
+__all__ = ["logistic_loss", "Lr"]
 
 
 @dataclass(kw_only=True)
 class Lr:
     l2_penalty: float = 0.0
+    """Regularization coefficient. Use l2_penalty=0 for no regularization."""
     _weights: FloatArray | None = field(init=False, default=None)
+    """A [num_features] vector of classifier parameters to use a initialization."""
 
     @property
     def weights(self) -> FloatArray:
@@ -45,20 +43,75 @@ class Lr:
     def probs(self, features: FloatArray) -> FloatArray:
         return expit(self.logits(features))
 
-    def fit(
-        self,
-        *,
-        x: FloatArray,
-        y: IntArray,
-        tol: float = 1e-7,
-    ) -> Self:
-        self._weights = fit_lr_with_gd(
+    def fit(self, *, x: FloatArray, y: IntArray, tol: float = 1e-7) -> Self:
+        """Fit a logistic regression model via gradient descent.
+
+        :param x: A [num_samples, num_features] matrix of features.
+            The last feature dimension is assumed to be the bias term.
+        :param y: A [num_samples] vector of binary labels.
+        :param tol:Stopping criteria for gradient descent
+
+        :returns: The optimal [num_features] vector of classifier parameters.
+        """
+        x = np.copy(x)
+        y = np.copy(y)
+        n, d = x.shape
+
+        # Smoothness of the logistic loss
+        smoothness = np.sum(x**2) / (4.0 * n)
+
+        # Optimal initial learning rate
+        eta_init = 1.0 / (smoothness + self.l2_penalty)
+
+        theta = np.copy(self._weights) if some(self._weights) else np.zeros(d)
+
+        # Evaluate loss at initialization
+        prev_loss = logistic_loss(
             x=x,
             y=y,
-            tol=tol,
+            weights=theta,
             l2_penalty=self.l2_penalty,
-            theta_init=self._weights,
         )
+
+        loss_list = [prev_loss]
+        i = 0
+        gap = 1e30
+
+        eta = eta_init
+        while gap > tol and i < 10:  # 5_000:
+            # take gradients
+            exp_tx = np.exp(x @ theta)
+            c = exp_tx / (1 + exp_tx) - y
+            gradient = 1.0 / n * np.sum(x * c[:, np.newaxis], axis=0) + self.l2_penalty * np.append(
+                theta[:-1], 0
+            )
+
+            new_theta = theta - eta * gradient
+
+            # compute new loss
+            loss = logistic_loss(
+                x=x,
+                y=y,
+                weights=new_theta,
+                l2_penalty=self.l2_penalty,
+            )
+
+            # do backtracking line search
+            if loss > prev_loss:
+                eta *= 0.1
+                gap = 1.0e30
+                continue
+
+            eta = eta_init
+            theta = np.copy(new_theta)
+
+            loss_list.append(loss)
+            gap = prev_loss - loss
+            prev_loss = loss
+
+            i += 1
+        logger.info(f"Trained LR in {i} iterations")
+        self._weights = theta
         return self
 
     def loss(
@@ -100,86 +153,3 @@ def logistic_loss(
     regularization = (l2_penalty / 2.0) * np.linalg.norm(weights[:-1]) ** 2
 
     return log_likelihood + regularization  # type: ignore
-
-
-def fit_lr_with_gd(
-    *,
-    x: FloatArray,
-    y: IntArray,
-    l2_penalty: float,
-    tol: float = 1e-7,
-    theta_init: FloatArray | None = None,
-) -> FloatArray:
-    """Fit a logistic regression model via gradient descent.
-
-    :param x: A [num_samples, num_features] matrix of features.
-        The last feature dimension is assumed to be the bias term.
-
-    :param y: A [num_samples] vector of binary labels.
-    :param l2_penalty: Regularization coefficient. Use l2_penalty=0 for no regularization.
-    :param tol:Stopping criteria for gradient descent
-
-    :param theta_init: A [num_features] vector of classifier parameters to use a
-        initialization
-
-    :returns: The optimal [num_features] vector of classifier parameters.
-    """
-    x = np.copy(x)
-    y = np.copy(y)
-    n, d = x.shape
-
-    # Smoothness of the logistic loss
-    smoothness = np.sum(x**2) / (4.0 * n)
-
-    # Optimal initial learning rate
-    eta_init = 1.0 / (smoothness + l2_penalty)
-
-    theta = np.copy(theta_init) if some(theta_init) else np.zeros(d)
-
-    # Evaluate loss at initialization
-    prev_loss = logistic_loss(
-        x=x,
-        y=y,
-        weights=theta,
-        l2_penalty=l2_penalty,
-    )
-
-    loss_list = [prev_loss]
-    i = 0
-    gap = 1e30
-
-    eta = eta_init
-    while gap > tol and i < 5_000:
-        # take gradients
-        exp_tx = np.exp(x @ theta)
-        c = exp_tx / (1 + exp_tx) - y
-        gradient = 1.0 / n * np.sum(x * c[:, np.newaxis], axis=0) + l2_penalty * np.append(
-            theta[:-1], 0
-        )
-
-        new_theta = theta - eta * gradient
-
-        # compute new loss
-        loss = logistic_loss(
-            x=x,
-            y=y,
-            weights=new_theta,
-            l2_penalty=l2_penalty,
-        )
-
-        # do backtracking line search
-        if loss > prev_loss:
-            eta *= 0.1
-            gap = 1.0e30
-            continue
-
-        eta = eta_init
-        theta = np.copy(new_theta)
-
-        loss_list.append(loss)
-        gap = prev_loss - loss
-        prev_loss = loss
-
-        i += 1
-    logger.info(f"Trained LR in {i} iterations")
-    return theta

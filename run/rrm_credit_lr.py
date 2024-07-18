@@ -100,16 +100,23 @@ if __name__ == "__main__":
     l2_penalty = 1.0 / num_agents
 
     epsilon_list = [
-        0.001,
-        0.01,
-        0.1,
+        # 0.001,
+        # 0.01,
+        # 0.1,
+        # 0.2,
+        # 0.3,
+        # 0.4,
+        # 0.5,
+        0.6,
         1,
+        2,
+        3,
         # 10,
         # 80,
         # 150,
         # 1000,
     ]
-    num_steps = 250
+    num_steps = 1000
 
     loss_starts: list[list[float]] = []
     acc_starts: list[list[float]] = []

@@ -55,18 +55,23 @@ class DynamicEnv(Env):
         if not self.action_space.contains(action):
             raise ValueError(f"{action} ({type(action)}) invalid")
         self.time += self.timestep
+        old_features = self.state.features
+
         # Get the next state from simulation.
-        rollout = self.simulator(
-            state=self.state,
-            action=action,
-            steps=self.timestep,
-            start_time=self.time,
+        # Do one step of the user adapatation.
+        rollout = self.simulator.simulate(
+            state=self.state, action=action, steps=self.timestep, start_time=self.time
         )
+
         self.state = rollout.final_state  # [self.time]
         truncated = terminated = bool(self.time >= self.end_time)
         reward = self.reward_fn.calculate(state=self.state, action=action)
         obs = self.state.asdict()
         info_dict = {}
+
+        # TODO: Fix this properly or make it configurable.
+        self.state.features = old_features
+
         return obs, reward, terminated, truncated, info_dict
 
     @override
