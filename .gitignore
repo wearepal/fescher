@@ -171,3 +171,5 @@ outputs/
 
 # Ignore VSCode files
 .vscode/
+
+**/.DS_Store

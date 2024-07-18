@@ -1,5 +1,7 @@
 """Environment registration."""
-from typing import Any, Callable, ClassVar, Final, TypeVar, TypedDict, cast, overload
+
+from collections.abc import Callable
+from typing import Any, ClassVar, Final, TypeVar, TypedDict, cast, overload
 from typing_extensions import Required, Unpack, override
 
 import gymnasium
@@ -8,8 +10,8 @@ from ranzen import unwrap_or
 
 from src.conftest import TESTING
 from src.dynamics.env import DynamicEnv
-from src.dynamics.response import LinearResponse, ResponseFn
-from src.dynamics.reward import LogisticReward, RewardFn
+from src.dynamics.response import LinearResponse, Response
+from src.dynamics.reward import LogisticReward, Reward
 from src.dynamics.simulator import Simulator, State
 from src.loader.credit import CreditData
 
@@ -30,13 +32,13 @@ class RegisterKwargs(TypedDict, total=False):
 
 
 @overload
-def register(fn_: E, /, **kwargs: Unpack[RegisterKwargs]) -> E:
-    ...
+def register(fn_: E, /, **kwargs: Unpack[RegisterKwargs]) -> E: ...
 
 
 @overload
-def register(fn_: None = ..., /, **kwargs: Unpack[RegisterKwargs]) -> Callable[[E | None], E]:
-    ...
+def register(
+    fn_: None = ..., /, **kwargs: Unpack[RegisterKwargs]
+) -> Callable[[E | None], E]: ...
 
 
 def register(
@@ -58,8 +60,8 @@ def register(
 
 class CreditEnvKwargs(TypedDict, total=False):
     initial_state: State | None
-    response_fn: ResponseFn | None
-    reward_fn: RewardFn | None
+    response_fn: Response | None
+    reward_fn: Reward | None
     memory: bool
     start_time: int
     end_time: int
@@ -82,8 +84,8 @@ class CreditEnvCreator(EnvCreator):
     def __call__(
         self,
         initial_state: State | None = None,
-        response_fn: ResponseFn | None = None,
-        reward_fn: RewardFn | None = None,
+        response_fn: Response | None = None,
+        reward_fn: Reward | None = None,
         memory: bool = False,
         start_time: int = 0,
         end_time: int = 5,

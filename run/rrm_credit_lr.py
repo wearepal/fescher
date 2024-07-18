@@ -25,6 +25,7 @@ class EpisodeRecord:
     acc_start: list[float] = field(default_factory=list)
     acc_end: list[float] = field(default_factory=list)
     theta_gap: list[float] = field(default_factory=list)
+    theta: list[np.ndarray] = field(default_factory=list)
 
 
 def repeated_risk_minimization(
@@ -64,16 +65,17 @@ def repeated_risk_minimization(
         )
         record.acc_end.append(lr.acc(features=features_strat, labels=labels))
         # Track distance (in terms of Euclidean norm) between iterates
-        record.theta_gap.append(np.linalg.norm(lr.weights - theta))
+        record.theta_gap.append(np.linalg.norm(lr.weights - theta))  # type: ignore
+        record.theta.append(lr.weights)
         theta = np.copy(lr.weights)
-
     return record
 
 
 def make_env(*, initial_state: State, epsilon: float) -> DynamicEnv:
     from src.dynamics.registration import CreditEnvCreator
 
-    response_fn = LinearResponse(epsilon=epsilon)
+    # response_fn = LinearResponse(epsilon=epsilon, changeable_features=[0, 5, 7])
+    response_fn = LinearResponse(epsilon=epsilon, changeable_features=[2, 6, 8])
     env = CreditEnvCreator.as_env(
         initial_state=initial_state,
         response_fn=response_fn,
@@ -92,29 +94,41 @@ if __name__ == "__main__":
     # years.
     base_x, base_y = initial_state.features, initial_state.labels
     num_agents, num_features = base_x.shape
-    logger.info(f"The dataset is made up of {num_agents} agents and {num_features} features.")
+    logger.info(
+        f"The dataset is made up of {num_agents} agents and {num_features} features."
+    )
 
     # Fit a rudimentary LR model to the data.
     l2_penalty = 1.0 / num_agents
 
-    lr = Lr(l2_penalty=l2_penalty).fit(
-        x=base_x,
-        y=base_y,
-    )
-    baseline_acc = lr.acc(features=base_x, labels=base_y)
-    logger.info(f"Baseline logistic regresion model accuracy: {100 * baseline_acc:.2f}%")
-
     epsilon_list = [
+        0.001,
+        0.01,
+        0.1,
         1,
-        80,
-        150,
-        1000,
+        # 10,
+        # 80,
+        # 150,
+        # 1000,
     ]
-    num_steps = 25
+    num_steps = 250
 
-    loss_starts, acc_starts, loss_ends, acc_ends, theta_gaps = [], [], [], [], []
+    loss_starts: list[list[float]] = []
+    acc_starts: list[list[float]] = []
+    loss_ends: list[list[float]] = []
+    acc_ends: list[list[float]] = []
+    theta_gaps: list[list[float]] = []
+    thetas: list[list[np.ndarray]] = []
 
     for epsilon_idx, epsilon in tqdm(enumerate(epsilon_list)):
+        lr = Lr(l2_penalty=l2_penalty).fit(
+            x=base_x,
+            y=base_y,
+        )
+        baseline_acc = lr.acc(features=base_x, labels=base_y)
+        logger.info(
+            f"Baseline logistic regresion model accuracy: {100 * baseline_acc:.2f}%"
+        )
         env = make_env(initial_state=initial_state, epsilon=epsilon)
         logger.info(f"Running retraining for epsilon {epsilon:.2f}")
         record = repeated_risk_minimization(
@@ -127,7 +141,9 @@ if __name__ == "__main__":
         acc_starts.append(record.acc_start)
         acc_ends.append(record.acc_end)
         theta_gaps.append(record.theta_gap)
+        thetas.append(record.theta)
 
+    changeable_features = env.simulator.response.changeable_features  # type: ignore
     # ------------------------------------------------------------------------------
     # Plotting
     # ------------------------------------------------------------------------------
@@ -136,7 +152,7 @@ if __name__ == "__main__":
     # the two values with a blue line and indicating change in risk due to
     # strategic distribution shift with a dashed green line.
     for idx, epsilon in enumerate(epsilon_list):
-        ax = axes[idx // 2][idx % 2]
+        ax = axes[idx // 2][idx % 2]  # type: ignore
         offset = 0.8
         ax.set_title(rf"Performative Risk, $\epsilon$={epsilon}", fontsize=20)
         for i in range(2, num_steps):
@@ -159,7 +175,7 @@ if __name__ == "__main__":
     # The performative risk is a surrogate for the underlying metric we care
     # about, accuracy. We can similarly plot accuracy during retraining.
     for idx, epsilon in enumerate(epsilon_list):
-        ax = axes[idx // 2][idx % 2]
+        ax = axes[idx // 2][idx % 2]  # type: ignore
         offset = 0.8
         ax.set_title(rf"Performative Accuracy, $\epsilon$={epsilon}", fontsize=20)
         for i in range(2, num_steps):
@@ -173,7 +189,7 @@ if __name__ == "__main__":
 
         ax.set_xlabel("Step", fontsize=16)
         ax.set_ylabel("Accuracy", fontsize=16)
-        ax.set_ylim([0.5, 0.75])
+        # ax.set_ylim([0.5, 0.75])
     plt.subplots_adjust(hspace=0.25)
     plt.show()
 
@@ -184,14 +200,14 @@ if __name__ == "__main__":
     # quantity bounded by the theorems in Performative Prediction, which shows
     # that repeated risk minimization converges in domain to a stable point.
     for idx, (gaps, eps) in enumerate(zip(processed_theta_gaps, epsilon_list)):
-        label = "$\\varepsilon$ = {}".format(eps)
+        label = f"$\\varepsilon$ = {eps}"
         if idx == 0:
             ax.semilogy(
                 gaps,
                 label=label,
                 linewidth=3,
                 alpha=1,
-                markevery=[-1],
+                # markevery=[-1],
                 marker="*",
                 linestyle=(0, (1, 1)),
             )
@@ -201,16 +217,37 @@ if __name__ == "__main__":
                 label=label,
                 linewidth=3,
                 alpha=1,
-                markevery=[-1],
+                # markevery=[-1],
                 marker="*",
                 linestyle="solid",
             )
         else:
             ax.semilogy(gaps, label=label, linewidth=3)
-
     ax.set_title("Convergence in Domain for Repeated Risk Minimization", fontsize=18)
     ax.set_xlabel("Iteration $t$", fontsize=18)
-    ax.set_ylabel(r"Distance Between Iterates: $\|\theta_{t+1} - \theta_{t}\|_2 $", fontsize=14)
+    ax.set_ylabel(
+        r"Distance Between Iterates: $\|\theta_{t+1} - \theta_{t}\|_2 $", fontsize=14
+    )
     ax.tick_params(labelsize=18)
     plt.legend(fontsize=18)
+    plt.show()
+
+    fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(12, 8))
+    # The performative risk is a surrogate for the underlying metric we care
+    # about, accuracy. We can similarly plot accuracy during retraining.
+    for idx, epsilon in enumerate(epsilon_list):
+        ax = axes[idx // 2][idx % 2]  # type: ignore
+        ax.set_title(rf"Feature importance, $\epsilon$={epsilon}")
+        theta = np.stack(thetas[idx], axis=1)
+        for i in range(theta.shape[0] - 1):
+            if i in changeable_features:
+                ax.plot(theta[i], label=f"{i}*")
+            if i not in changeable_features:
+                ax.plot(theta[i], label=f"{i}", linestyle="dashed")
+
+        ax.set_xlabel("Step")
+        ax.set_ylabel("Weight")
+        ax.legend(loc="center right")
+        # ax.set_ylim([0.5, 0.75])
+    plt.subplots_adjust(hspace=0.25)
     plt.show()

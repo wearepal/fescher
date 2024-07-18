@@ -1,8 +1,10 @@
 """Utility functions for performative prediction demo."""
+
 from __future__ import annotations
 from dataclasses import dataclass, field
 from typing_extensions import Self
 
+from loguru import logger
 import numpy as np
 from ranzen import some
 from scipy.special import expit  # type: ignore
@@ -24,7 +26,9 @@ class Lr:
     @property
     def weights(self) -> FloatArray:
         if self._weights is None:
-            raise AttributeError("LR model must be fit before its weights can be retrieved.")
+            raise AttributeError(
+                "LR model must be fit before its weights can be retrieved."
+            )
         return self._weights
 
     @weights.setter
@@ -97,7 +101,7 @@ def logistic_loss(
 
     regularization = (l2_penalty / 2.0) * np.linalg.norm(weights[:-1]) ** 2
 
-    return log_likelihood + regularization
+    return log_likelihood + regularization  # type: ignore
 
 
 def fit_lr_with_gd(
@@ -110,8 +114,8 @@ def fit_lr_with_gd(
 ) -> FloatArray:
     """Fit a logistic regression model via gradient descent.
 
-    :param y: A [num_samples, num_features] matrix of features.
-    The last feature dimension is assumed to be the bias term.
+    :param x: A [num_samples, num_features] matrix of features.
+        The last feature dimension is assumed to be the bias term.
 
     :param y: A [num_samples] vector of binary labels.
     :param l2_penalty: Regularization coefficient. Use l2_penalty=0 for no regularization.
@@ -147,13 +151,13 @@ def fit_lr_with_gd(
     gap = 1e30
 
     eta = eta_init
-    while gap > tol:
+    while gap > tol and i < 5_000:
         # take gradients
         exp_tx = np.exp(x @ theta)
         c = exp_tx / (1 + exp_tx) - y
-        gradient = 1.0 / n * np.sum(x * c[:, np.newaxis], axis=0) + l2_penalty * np.append(
-            theta[:-1], 0
-        )
+        gradient = 1.0 / n * np.sum(
+            x * c[:, np.newaxis], axis=0
+        ) + l2_penalty * np.append(theta[:-1], 0)
 
         new_theta = theta - eta * gradient
 
@@ -179,5 +183,5 @@ def fit_lr_with_gd(
         prev_loss = loss
 
         i += 1
-
+    logger.info(f"Trained LR in {i} iterations")
     return theta

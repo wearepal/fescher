@@ -1,12 +1,14 @@
 """Interactive environment for the credit simulator."""
+
 from typing import Any, SupportsFloat, TypeAlias
 from typing_extensions import override
 
 from gymnasium.core import Env, ObsType
 
 from src.conftest import TESTING
-from src.dynamics.reward import RewardFn
-from src.dynamics.simulator import Simulator, State
+from src.dynamics.reward import Reward
+from src.dynamics.simulator import Simulator
+from src.dynamics.state import State
 from src.types import FloatArray
 
 __all__ = ["DynamicEnv"]
@@ -20,7 +22,7 @@ class DynamicEnv(Env):
         *,
         simulator: Simulator,
         initial_state: State,
-        reward_fn: RewardFn,
+        reward_fn: Reward,
         end_time: int,
         start_time: int = 0,
         timestep: int = 1,
@@ -60,9 +62,9 @@ class DynamicEnv(Env):
             steps=self.timestep,
             start_time=self.time,
         )
-        self.state = rollout[self.time]
+        self.state = rollout.final_state  # [self.time]
         truncated = terminated = bool(self.time >= self.end_time)
-        reward = self.reward_fn(state=self.state, action=action)
+        reward = self.reward_fn.calculate(state=self.state, action=action)
         obs = self.state.asdict()
         info_dict = {}
         return obs, reward, terminated, truncated, info_dict
@@ -93,7 +95,11 @@ if TESTING:
             end_time=1,
         )
         env.reset()
-        action1 = np.random.uniform(low=0, high=1, size=(initial_state.num_features,))
+        action1 = np.random.default_rng(0).uniform(
+            low=0, high=1, size=(initial_state.num_features,)
+        )
         env.step(action=action1)
-        action2 = np.random.uniform(low=0, high=1, size=(initial_state.num_features,))
+        action2 = np.random.default_rng(1).uniform(
+            low=0, high=1, size=(initial_state.num_features,)
+        )
         env.step(action=action2)

@@ -1,9 +1,10 @@
 """Load and preprocess Kaggle credit dataset."""
+
 from pathlib import Path
 
 import numpy as np
 import polars as pl
-from sklearn import preprocessing  # type: ignore
+from sklearn import preprocessing
 
 from src.dynamics.state import State
 from src.types import FloatArray, IntArray
@@ -55,22 +56,28 @@ class CreditData:
 
         rng = np.random.default_rng(seed=self.seed)
         data = pl.read_csv(
-            ZipFile(self.filepath).open("credit_data.csv", mode='r').read(),
+            ZipFile(self.filepath).open("credit_data.csv", mode="r").read(),
         )
+        data = data.drop("")
         # Replace "NA" with 'null'
-        data = data.with_columns(pl.when(pl.col(pl.Utf8) != "NA").then(pl.col(pl.Utf8)).keep_name())
+        data = data.with_columns(
+            pl.when(pl.col(pl.Utf8) != "NA").then(pl.col(pl.Utf8)).name.keep()
+        )
         # Drop null-containing rows
         data = data.drop_nulls()
+        data = data.cast(
+            {f"{col}": pl.Int64 for col in data.columns if data[col].dtype == pl.Utf8}
+        )
         outcomes = data.drop_in_place("SeriousDlqin2yrs")
         # zero mean, unit variance
         features = preprocessing.scale(data.to_numpy())
         # add bias term
-        features = np.append(features, np.ones((features.shape[0], 1)), axis=1)
+        features = np.append(features, np.ones((features.shape[0], 1)), axis=1)  # type: ignore
         outcomes = outcomes.to_numpy()
 
         # balance classes
-        default_indices = np.where(outcomes == 1)[0]
-        other_indices = np.where(outcomes == 0)[0][:10000]
+        default_indices = np.nonzero(outcomes == 1)[0]
+        other_indices = rng.permutation(np.nonzero(outcomes == 0)[0])[:10000]
         indices = np.concatenate((default_indices, other_indices))
 
         features_balanced = features[indices]
