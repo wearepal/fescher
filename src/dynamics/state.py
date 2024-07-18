@@ -40,9 +40,7 @@ class State:
     @property
     def action_space(self) -> spaces.Box:
         num_features = self.features.shape[-1]
-        return spaces.Box(
-            low=-np.inf, high=np.inf, shape=(num_features,), dtype=np.float64
-        )
+        return spaces.Box(low=-np.inf, high=np.inf, shape=(num_features,), dtype=np.float64)
 
     @property
     def observation_space(self) -> spaces.Dict:

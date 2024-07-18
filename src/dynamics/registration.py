@@ -36,9 +36,7 @@ def register(fn_: E, /, **kwargs: Unpack[RegisterKwargs]) -> E: ...
 
 
 @overload
-def register(
-    fn_: None = ..., /, **kwargs: Unpack[RegisterKwargs]
-) -> Callable[[E | None], E]: ...
+def register(fn_: None = ..., /, **kwargs: Unpack[RegisterKwargs]) -> Callable[[E | None], E]: ...
 
 
 def register(

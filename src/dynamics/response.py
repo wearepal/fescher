@@ -7,20 +7,12 @@ from ranzen import unwrap_or
 from src.conftest import TESTING
 from src.types import FloatArray, IntArray
 
-__all__ = [
-    "Response",
-    "LinearResponse",
-]
+__all__ = ["Response", "LinearResponse"]
 
 
 class Response(ABC):
     @abstractmethod
-    def respond(
-        self,
-        *,
-        features: FloatArray,
-        action: FloatArray,
-    ) -> FloatArray: ...
+    def respond(self, *, features: FloatArray, action: FloatArray) -> FloatArray: ...
 
 
 @dataclass(kw_only=True)
@@ -75,9 +67,7 @@ def rir_response(
         interval [0, 1] (i.e. be valid probabilities).
     """
     n = features.shape[0]
-    resample_inds = np.random.default_rng(0).binomial(
-        n=1, p=(action + epsilon).clip(max=1.0)
-    )
+    resample_inds = np.random.default_rng(0).binomial(n=1, p=(action + epsilon).clip(max=1.0))
     # sample new indices by shifting by x ~ unif{1, n-1} and projecting the image
     # onto the Z/nZ ring.
     shift = np.random.default_rng(0).integers(
@@ -157,9 +147,7 @@ if TESTING:
         assert new_features.shape == features.shape
 
         changeable_features = np.array([0, 2])
-        response_fn = LinearResponse(
-            epsilon=1.0, changeable_features=changeable_features
-        )
+        response_fn = LinearResponse(epsilon=1.0, changeable_features=changeable_features)
         new_features = response_fn.respond(features=features, action=action)
         assert new_features.shape == features.shape
 

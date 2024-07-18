@@ -94,9 +94,7 @@ if __name__ == "__main__":
     # years.
     base_x, base_y = initial_state.features, initial_state.labels
     num_agents, num_features = base_x.shape
-    logger.info(
-        f"The dataset is made up of {num_agents} agents and {num_features} features."
-    )
+    logger.info(f"The dataset is made up of {num_agents} agents and {num_features} features.")
 
     # Fit a rudimentary LR model to the data.
     l2_penalty = 1.0 / num_agents
@@ -126,9 +124,7 @@ if __name__ == "__main__":
             y=base_y,
         )
         baseline_acc = lr.acc(features=base_x, labels=base_y)
-        logger.info(
-            f"Baseline logistic regresion model accuracy: {100 * baseline_acc:.2f}%"
-        )
+        logger.info(f"Baseline logistic regresion model accuracy: {100 * baseline_acc:.2f}%")
         env = make_env(initial_state=initial_state, epsilon=epsilon)
         logger.info(f"Running retraining for epsilon {epsilon:.2f}")
         record = repeated_risk_minimization(
@@ -225,9 +221,7 @@ if __name__ == "__main__":
             ax.semilogy(gaps, label=label, linewidth=3)
     ax.set_title("Convergence in Domain for Repeated Risk Minimization", fontsize=18)
     ax.set_xlabel("Iteration $t$", fontsize=18)
-    ax.set_ylabel(
-        r"Distance Between Iterates: $\|\theta_{t+1} - \theta_{t}\|_2 $", fontsize=14
-    )
+    ax.set_ylabel(r"Distance Between Iterates: $\|\theta_{t+1} - \theta_{t}\|_2 $", fontsize=14)
     ax.tick_params(labelsize=18)
     plt.legend(fontsize=18)
     plt.show()
