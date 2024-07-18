@@ -1,10 +1,21 @@
-[tool.poetry]
+[project]
 name = "fescher"
 version = "0.1.0"
 description = "A 'fesch' package for investigating the Escherian problem of `performative prediction` (under fairness constraints)"
-authors = ["Predictive Analytics Lab (PAL) <info@predictive-analytics-lab.com>"]
-license = "Apache License 2.0"
+authors = [
+    { name = "Predictive Analytics Lab (PAL)", email = "info@predictive-analytics-lab.com" },
+]
+license = "Apache-2.0"
 packages = [{ include = "src" }]
+dependencies = [
+    "tqdm>=4.66.4",
+    "scikit-learn>=1.5.1",
+    "seaborn>=0.13.2",
+    "gymnasium>=0.29.1",
+    "polars>=1.2.0",
+    "loguru>=0.7.2",
+    "ranzen>=2.5.1",
+]
 classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -14,63 +25,45 @@ classifiers = [
 ]
 repository = "https://github.com/wearepal/fescher"
 readme = "README.md"
-
-[tool.poetry.dependencies]
-python = ">=3.10,<3.12"
-seaborn = "^0.12.2"
-scikit-learn = "^1.3.1"
-matplotlib = "^3.8.0"
-loguru = "^0.7.2"
-ranzen = "^2.3.0"
-dadaptation = "^3.1"
-gymnasium = "^0.29.1"
-polars = "^0.19.11"
-
-[tool.poetry.group.dev.dependencies]
-black = "^23.9.1"
-ruff = "^0.0.291"
-pytest = "^7.4.3"
+requires-python = ">= 3.10, <3.12"
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "maturin"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
-[tool.black]
-line-length = 100
-target-version = ['py38']
-skip-string-normalization = true
-include = '\.pyi?$'
-exclude = '''
-(
-  /(
-      \.eggs         # exclude a few common directories in the
-    | \.git          # root of the project
-    | \.hg
-    | \.mypy_cache
-    | \.tox
-    | \.venv
-    | _build
-    | buck-out
-    | build
-    | dist
-  )/
-  | foo.py           # also separately exclude a file named foo.py in
-                     # the root of the project
-)
-'''
+[tool.rye]
+managed = true
+dev-dependencies = ["pytest>=8.2.2"]
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/fescher"]
+
 [tool.ruff]
-line-length = 88 # for import sorting
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.format]
+quote-style = "preserve"
+exclude = ["conduit/hydra/**"]
+
+[tool.ruff.lint]
 select = [
     "E", # pycodestyle
     "F", # pyflakes
     "I", # isort
     # "N", # naming
+    "NPY", # numpy
+    "PIE",
     "PLC", # pylint convention
     "PLE", # pylint error
     # "PLR", # pylint refactor
     "PLW", # pylint warning
     "PTH", # use-pathlib
-    # "UP", # pyupgrade
+    "SIM", # simplify
+    "UP",  # pyupgrade
     "W",
 ]
 ignore = [
@@ -78,37 +71,44 @@ ignore = [
     "E721",    # `isinstance()` vs `type() == type()`
     "E741",    # ambiguous variable name
     "F541",    # f-string without placeholder
+    "NPY002",  # np.random
     "PLW2901", # overwriting loop variable
     "PLC0105", # covariant typevars have to end in "_co"
+    "SIM108",  # ternary operator
+    "UP038",   # isinstance calls with `X | Y`
 ]
-target-version = "py310"
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F403"]
 
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 known-third-party = [
+    "PIL",
+    "albumentations",
     "attr",
-    "gymnasium",
+    "cv2",
+    "ethicml",
     "hydra",
-    "loguru",
     "numpy",
     "omegaconf",
     "pandas",
-    "polars",
     "pytest",
+    "pytorch_lightning",
     "ranzen",
     "requests",
-    "seaborn",
+    "rich",
     "sklearn",
     "torch",
+    "torchaudio",
+    "torchmetrics",
+    "torchvision",
     "tqdm",
 ]
 extra-standard-library = ["typing_extensions"]
 no-lines-before = ["future", "standard-library"]
 force-sort-within-sections = true
 split-on-trailing-comma = false
-classes = ["MISSING"]
+classes = ["MISSING", "NICO", "PACS", "SSRP", "ISIC"]
 case-sensitive = true
 
 [tool.pyright]
@@ -123,24 +123,11 @@ reportUnnecessaryTypeIgnoreComment = "warning"
 reportUnnecessaryIsInstance = "warning"
 reportUnnecessaryCast = "warning"
 reportUnnecessaryComparison = "warning"
+reportMissingTypeStubs = "warning"
 # these errors are a bit annoying
 reportUnknownMemberType = "none"
 reportUnknownVariableType = "none"
 reportUnknownParameterType = "none"
 reportUnknownArgumentType = "none"
-ignore = []
-
-[tool.pytest.ini_options]
-python_files = "*.py"
-python_classes = "Test"
-python_functions = "test_*"
-addopts = ["--import-mode=importlib"]
-# Ignore deprecation warnings coming from pytest/pkg_resources
-# that pollute the console output when testing.
-filterwarnings = [
-    'ignore::DeprecationWarning:_pytest.*:',
-    'ignore::DeprecationWarning:pkg_resources.*:',
-]
-
-[tool.maturin]
-features = ["pyo3/extension-module"]
+reportUnknownLambdaType = "none"
+ignore = ["conduit/hydra/**"]

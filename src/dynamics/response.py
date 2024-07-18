@@ -1,6 +1,5 @@
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Protocol
-from typing_extensions import override
 
 import numpy as np
 from ranzen import unwrap_or
@@ -9,60 +8,49 @@ from src.conftest import TESTING
 from src.types import FloatArray, IntArray
 
 __all__ = [
-    "ResponseFn",
-    "linear_response",
+    "Response",
     "LinearResponse",
 ]
 
 
-class ResponseFn(Protocol):
-    def __call__(
+class Response(ABC):
+    @abstractmethod
+    def respond(
         self,
         *,
         features: FloatArray,
         action: FloatArray,
-    ) -> FloatArray:
-        ...
-
-
-def linear_response(
-    *,
-    features: FloatArray,
-    action: FloatArray,
-    epsilon: float = 1.0,
-    changeable_features: IntArray | slice | list[int] | None = None,
-) -> FloatArray:
-    action = action.flatten()
-    if len(action) != features.shape[1]:
-        raise ValueError(
-            "'action' should correspond to the feature weights and thus must have entries "
-            "numbering the number of columns in 'features'"
-        )
-    changeable_features = unwrap_or(changeable_features, default=slice(None))
-    new_features = np.copy(features)
-    action_strat = action[changeable_features]
-    new_features[:, changeable_features] -= epsilon * action_strat
-    return new_features
+    ) -> FloatArray: ...
 
 
 @dataclass(kw_only=True)
-class LinearResponse(ResponseFn):
+class LinearResponse(Response):
     changeable_features: IntArray | slice | list[int] | None = None
     epsilon: float = 1.0
 
-    @override
-    def __call__(
+    def respond(
         self,
         *,
         features: FloatArray,
         action: FloatArray,
     ) -> FloatArray:
-        return linear_response(
-            features=features,
-            action=action,
-            epsilon=self.epsilon,
-            changeable_features=self.changeable_features,
-        )
+        action = action.flatten()
+        if len(action) != features.shape[1]:
+            raise ValueError(
+                "'action' should correspond to the feature weights and thus must have entries "
+                "numbering the number of columns in 'features'"
+            )
+        changeable_features = unwrap_or(self.changeable_features, default=slice(None))
+        new_features = np.copy(features)
+
+        neg_item_mask = np.dot(action[None, :], features[...].T)[0] < 0
+        # action_strat = action[changeable_features]
+        assert not isinstance(changeable_features, slice)
+        for changeable_feature in changeable_features:
+            new_features[np.nonzero(neg_item_mask), changeable_feature] += (
+                self.epsilon / np.linalg.norm(action)
+            ) * action[changeable_feature]
+        return new_features
 
 
 def rir_response(
@@ -87,10 +75,12 @@ def rir_response(
         interval [0, 1] (i.e. be valid probabilities).
     """
     n = features.shape[0]
-    resample_inds = np.random.binomial(n=1, p=(action + epsilon).clip(max=1.0))
+    resample_inds = np.random.default_rng(0).binomial(
+        n=1, p=(action + epsilon).clip(max=1.0)
+    )
     # sample new indices by shifting by x ~ unif{1, n-1} and projecting the image
     # onto the Z/nZ ring.
-    shift = np.random.randint(
+    shift = np.random.default_rng(0).integers(
         low=1,
         high=n,
         size=(
@@ -119,7 +109,7 @@ def rir_response(
 
 
 @dataclass(kw_only=True)
-class RIRResponse(ResponseFn):
+class RIRResponse:
     r"""
     Respond with the Resample-If-Rejected (RIR) procedure proposed in
     `Performative Prediction with Neural Networks` wherein the strategic
@@ -138,7 +128,6 @@ class RIRResponse(ResponseFn):
     changeable_features: IntArray | slice | list[int] | None = None
     epsilon: float = 1.0
 
-    @override
     def __call__(
         self,
         *,
@@ -164,17 +153,19 @@ if TESTING:
         action = rng.normal(loc=0, scale=0.5, size=(c,))
 
         response_fn = LinearResponse(epsilon=1.0, changeable_features=None)
-        new_features = response_fn(features=features, action=action)
+        new_features = response_fn.respond(features=features, action=action)
         assert new_features.shape == features.shape
 
         changeable_features = np.array([0, 2])
-        response_fn = LinearResponse(epsilon=1.0, changeable_features=changeable_features)
-        new_features = response_fn(features=features, action=action)
+        response_fn = LinearResponse(
+            epsilon=1.0, changeable_features=changeable_features
+        )
+        new_features = response_fn.respond(features=features, action=action)
         assert new_features.shape == features.shape
 
         missized_action = rng.normal(loc=0, scale=0.5, size=(n,))
         with pytest.raises(ValueError):
-            response_fn(features=features, action=missized_action)
+            response_fn.respond(features=features, action=missized_action)
 
     def test_rir_response():
         rng = np.random.default_rng(0)
@@ -185,6 +176,7 @@ if TESTING:
 
         response_fn = RIRResponse(epsilon=1.0, changeable_features=None)
         new_features = response_fn(features=features, action=action)
+        assert not np.testing.assert_array_equal(features, new_features)
 
         changeable_features = np.array([0, 2])
         response_fn = RIRResponse(epsilon=1.0, changeable_features=changeable_features)
