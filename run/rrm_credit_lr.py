@@ -11,7 +11,7 @@ from tqdm import tqdm
 sys.path.append(str(Path(__file__).parent / ".."))
 
 
-from hydra_zen import ZenStore, builds, zen
+from hydra_zen import ZenStore, zen
 
 from src.dynamics.env import DynamicEnv
 from src.dynamics.response import LinearResponse
