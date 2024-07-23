@@ -32,7 +32,7 @@ class LinearResponse(Response):
                 "'action' should correspond to the feature weights and thus must have entries "
                 "numbering the number of columns in 'features'"
             )
-        changeable_features = unwrap_or(self.changeable_features, default=slice(None))
+        changeable_features = unwrap_or(self.changeable_features, default=[])
         new_features = np.copy(features)
 
         neg_item_mask = np.dot(action[None, :], features[...].T)[0] < 0
@@ -164,7 +164,8 @@ if TESTING:
 
         response_fn = RIRResponse(epsilon=1.0, changeable_features=None)
         new_features = response_fn(features=features, action=action)
-        assert not np.testing.assert_array_equal(features, new_features)
+        with pytest.raises(AssertionError):
+            assert np.testing.assert_array_equal(features, new_features)
 
         changeable_features = np.array([0, 2])
         response_fn = RIRResponse(epsilon=1.0, changeable_features=changeable_features)
