@@ -1,6 +1,7 @@
 """Load and preprocess Kaggle credit dataset."""
 
 from pathlib import Path
+from typing import Protocol
 
 import numpy as np
 import polars as pl
@@ -12,6 +13,23 @@ from src.types import FloatArray, IntArray
 __all__ = ["CreditData"]
 
 
+class Data(Protocol):
+    def __init__(self, seed: int | None = None) -> None: ...
+
+    def as_state(self) -> State: ...
+
+    @property
+    def features(self) -> FloatArray: ...
+
+    @property
+    def labels(self) -> IntArray: ...
+
+    @property
+    def num_agents(self) -> int: ...
+
+    def load(self) -> tuple[FloatArray, FloatArray]: ...
+
+
 class CreditData:
     """Class to lazily load the credit dataset."""
 
@@ -21,10 +39,8 @@ class CreditData:
         self._labels = None
         self.seed = seed
 
-    @classmethod
-    def as_state(cls, seed: int | None = None) -> State:
-        data = cls(seed=seed)
-        return State(features=data.features, labels=data.labels)
+    def as_state(self) -> State:
+        return State(features=self.features, labels=self.labels)
 
     @property
     def features(self) -> FloatArray:

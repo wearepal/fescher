@@ -11,10 +11,12 @@ from tqdm import tqdm
 sys.path.append(str(Path(__file__).parent / ".."))
 
 
+from hydra_zen import ZenStore, builds, zen
+
 from src.dynamics.env import DynamicEnv
 from src.dynamics.response import LinearResponse
 from src.dynamics.state import State
-from src.loader.credit import CreditData
+from src.loader.credit import CreditData, Data
 from src.models.lr import Lr, logistic_loss
 
 
@@ -29,10 +31,7 @@ class EpisodeRecord:
 
 
 def repeated_risk_minimization(
-    *,
-    env: DynamicEnv,
-    num_steps: int,
-    lr: Lr,
+    *, env: DynamicEnv, num_steps: int, lr: Lr, l2_penalty: float
 ) -> EpisodeRecord:
     """Run repeated risk minimization for num_iters steps"""
     # Track loss and accuracy before/after updating model on new distribution
@@ -84,10 +83,16 @@ def make_env(*, initial_state: State, epsilon: float) -> DynamicEnv:
     return env
 
 
-if __name__ == "__main__":
+store = ZenStore()
+data_store = store(group="dataset")
+data_store(CreditData, seed=0, name="credit")
+
+
+@store(name="fescher", hydra_defaults=["_self_", {"dataset": "credit"}])
+def main(dataset: Data):
     # We use the credit simulator, which is a strategic classification
     # simulator based on the 'Kaggle Give Me Some Credit' (GMSC) dataset.
-    initial_state = CreditData.as_state(seed=0)
+    initial_state = dataset.as_state()
     # The state of the environment is a dataset consisting of (1) financial
     # features of individuals, e.g. DebtRatio, and (2) a binary label indicating
     # whether an individual experienced financial distress in the subsequent two
@@ -128,9 +133,7 @@ if __name__ == "__main__":
         env = make_env(initial_state=initial_state, epsilon=epsilon)
         logger.info(f"Running retraining for epsilon {epsilon:.2f}")
         record = repeated_risk_minimization(
-            env=env,
-            lr=lr,
-            num_steps=num_steps,
+            env=env, lr=lr, num_steps=num_steps, l2_penalty=l2_penalty
         )
         loss_starts.append(record.loss_start)
         loss_ends.append(record.loss_end)
@@ -245,3 +248,12 @@ if __name__ == "__main__":
         # ax.set_ylim([0.5, 0.75])
     plt.subplots_adjust(hspace=0.25)
     plt.show()
+
+
+if __name__ == "__main__":
+    store.add_to_hydra_store()
+    zen(main).hydra_main(
+        config_name="fescher",
+        version_base="1.1",
+        config_path=None,
+    )

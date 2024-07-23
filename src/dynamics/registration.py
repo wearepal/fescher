@@ -91,7 +91,7 @@ class CreditEnvCreator(EnvCreator):
         **kwargs: Any,
     ) -> DynamicEnv:
         del kwargs
-        initial_state = unwrap_or(initial_state, default=CreditData.as_state())
+        initial_state = unwrap_or(initial_state, default=CreditData().as_state())
         reward_fn = unwrap_or(reward_fn, default=LogisticReward(l2_penalty=0.0))
         response_fn = unwrap_or(response_fn, default=LinearResponse(epsilon=1.0))
         simulator = Simulator(
