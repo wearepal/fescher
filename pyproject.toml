@@ -39,6 +39,9 @@ dev-dependencies = [
     "python-type-stubs @ git+https://github.com/wearepal/python-type-stubs@95a26e5",
 ]
 
+[tool.rye.scripts]
+rrm = {cmd="python run/rrm_credit_lr.py"}
+
 [tool.hatch.metadata]
 allow-direct-references = true
 
@@ -136,3 +139,15 @@ reportUnknownArgumentType = "none"
 reportUnknownLambdaType = "none"
 venvPath = "."
 venv = ".venv"
+
+[tool.pytest.ini_options]
+python_files = "*.py"
+python_classes = "Test"
+python_functions = "test_*"
+addopts = ["--import-mode=importlib"]
+# Ignore deprecation warnings coming from pytest/pkg_resources
+# that pollute the console output when testing.
+filterwarnings = [
+   "ignore::DeprecationWarning:_pytest.*:",
+   "ignore::DeprecationWarning:pkg_resources.*:"
+]
