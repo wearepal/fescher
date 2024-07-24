@@ -8,7 +8,7 @@ import gymnasium
 from gymnasium.envs.registration import EnvCreator
 from ranzen import unwrap_or
 
-from src.conftest import TESTING
+from src.conftest import TESTING  # noqa: F401
 from src.dynamics.env import DynamicEnv
 from src.dynamics.response import LinearResponse, Response
 from src.dynamics.reward import LogisticReward, Reward
@@ -67,6 +67,18 @@ class CreditEnvKwargs(TypedDict, total=False):
 
 
 _CREDIT_ENV_ID: Final[str] = "Credit-v0"
+
+
+def make_env(*, initial_state: State, epsilon: float) -> DynamicEnv:
+    from src.dynamics.registration import CreditEnvCreator
+
+    response_fn = LinearResponse(epsilon=epsilon, changeable_features=[2, 6, 8])
+    env = CreditEnvCreator.as_env(
+        initial_state=initial_state,
+        response_fn=response_fn,
+    )
+    env.reset()
+    return env
 
 
 @register(

@@ -84,7 +84,7 @@ class CreditData:
         # zero mean, unit variance
         features = preprocessing.scale(data.to_numpy())
         # add bias term
-        features = np.append(features, np.ones((features.shape[0], 1)), axis=1)  # type: ignore
+        features = np.append(features, np.ones((features.shape[0], 1)), axis=1)
         outcomes = outcomes.to_numpy()
 
         # balance classes

@@ -40,7 +40,7 @@ dev-dependencies = [
 ]
 
 [tool.rye.scripts]
-rrm = {cmd="python run/rrm_credit_lr.py"}
+rrm = {cmd="python -m src.rrm_credit_lr"}
 
 [tool.hatch.metadata]
 allow-direct-references = true

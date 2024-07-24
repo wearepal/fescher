@@ -3,7 +3,7 @@ from dataclasses import dataclass, replace
 
 import numpy as np
 
-from src.conftest import TESTING
+from src.conftest import TESTING  # noqa: F401
 from src.dynamics.response import Response
 from src.dynamics.state import State
 from src.types import Action

@@ -5,7 +5,7 @@ from typing_extensions import override
 
 from gymnasium.core import Env, ObsType
 
-from src.conftest import TESTING
+from src.conftest import TESTING  # noqa: F401
 from src.dynamics.reward import Reward
 from src.dynamics.simulator import Simulator
 from src.dynamics.state import State
@@ -13,6 +13,7 @@ from src.types import FloatArray
 
 __all__ = ["DynamicEnv"]
 
+# The gymnasium Environment requires that this be a Tuple
 StepOutput: TypeAlias = tuple[ObsType, SupportsFloat, bool, bool, dict[str, Any]]
 
 
@@ -64,7 +65,7 @@ class DynamicEnv(Env):
         )
 
         self.state = rollout.final_state  # [self.time]
-        truncated = terminated = bool(self.time >= self.end_time)
+        truncated = terminated = self.time >= self.end_time
         reward = self.reward_fn.calculate(state=self.state, action=action)
         obs = self.state.asdict()
         info_dict = {}
