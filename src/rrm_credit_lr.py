@@ -1,9 +1,10 @@
 from __future__ import annotations
 from dataclasses import dataclass
 
+from beartype import beartype
 from hydra_zen import ZenStore, zen
 from loguru import logger
-import numpy as np
+from numpy import typing as npt
 from tqdm import tqdm
 
 from src.dynamics.registration import make_env
@@ -13,13 +14,16 @@ from src.plotting import make_acc_plots, make_feature_weight_plot, make_gap_plot
 from src.repeated_risk_min import repeated_risk_minimization
 
 
+@beartype
 @dataclass
 class ExperimentSettings:
     memory: bool
     num_steps: int
     epsilons: list[float]
+    changeable_features: list[int]
 
 
+@beartype
 @dataclass
 class PlotSettings:
     show_bias: bool
@@ -30,7 +34,14 @@ data_store = store(group="dataset")
 data_store(CreditData, seed=0, name="credit")
 
 exp_store = store(group="experiment")
-exp_store(ExperimentSettings, memory=False, num_steps=10, epsilons=[1, 10, 100, 1000], name="base")
+exp_store(
+    ExperimentSettings,
+    memory=False,
+    num_steps=10,
+    epsilons=[1, 10, 100, 1000],
+    changeable_features=[2, 6, 8],
+    name="base",
+)
 
 model_store = store(group="model")
 model_store(Lr, l2_penalty=1e-4, max_update_steps=10, name="lr")
@@ -70,7 +81,7 @@ def main(dataset: Data, experiment: ExperimentSettings, model: Model, plot: Plot
     loss_ends: list[list[float]] = []
     acc_ends: list[list[float]] = []
     theta_gaps: list[list[float]] = []
-    thetas: list[list[np.ndarray]] = []
+    thetas: list[list[npt.NDArray]] = []
 
     for epsilon in tqdm(experiment.epsilons):
         lr = model.fit(
@@ -79,7 +90,12 @@ def main(dataset: Data, experiment: ExperimentSettings, model: Model, plot: Plot
         )
         baseline_acc = lr.acc(features=base_x, labels=base_y)
         logger.info(f"Baseline logistic regresion model accuracy: {100 * baseline_acc:.2f}%")
-        env = make_env(initial_state=initial_state, epsilon=epsilon, memory=experiment.memory)
+        env = make_env(
+            initial_state=initial_state,
+            epsilon=epsilon,
+            memory=experiment.memory,
+            changeable_features=experiment.changeable_features,
+        )
         logger.info(f"Running retraining for epsilon {epsilon:.2f}")
         record = repeated_risk_minimization(
             env=env, lr=lr, num_steps=experiment.num_steps, l2_penalty=model.l2_penalty

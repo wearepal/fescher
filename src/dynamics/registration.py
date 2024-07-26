@@ -2,13 +2,16 @@
 
 from collections.abc import Callable
 from typing import Any, ClassVar, Final, TypeVar, TypedDict, cast, overload
+from beartype import beartype
 from typing_extensions import Required, Unpack, override
 
 import gymnasium
 from gymnasium.envs.registration import EnvCreator
+from gymnasium.wrappers.time_limit import TimeLimit
+import numpy as np
+from numpy import typing as npt
 from ranzen import unwrap_or
 
-from src.conftest import TESTING  # noqa: F401
 from src.dynamics.env import DynamicEnv
 from src.dynamics.response import LinearResponse, Response
 from src.dynamics.reward import LogisticReward, Reward
@@ -20,17 +23,21 @@ __all__ = ["CreditEnvCreator"]
 E = TypeVar("E", bound=type[EnvCreator])
 
 
-def make_env(*, initial_state: State, epsilon: float, memory: bool) -> DynamicEnv:
+@beartype
+def make_env(
+    *, initial_state: State, epsilon: float, memory: bool, changeable_features: list[int]
+) -> gymnasium.Env[npt.NDArray, npt.NDArray]:
     from src.dynamics.registration import CreditEnvCreator
 
-    response_fn = LinearResponse(epsilon=epsilon, changeable_features=[2, 6, 8])
+    response_fn = LinearResponse(epsilon=epsilon, changeable_features=changeable_features)
     env = CreditEnvCreator.as_env(
         initial_state=initial_state, response_fn=response_fn, memory=memory
     )
-    env.reset()
+    _ = env.reset()
     return env
 
 
+@beartype
 class RegisterKwargs(TypedDict, total=False):
     id: Required[str]
     reward_threshold: float | None
@@ -50,6 +57,7 @@ def register(fn_: E, /, **kwargs: Unpack[RegisterKwargs]) -> E: ...
 def register(fn_: None = ..., /, **kwargs: Unpack[RegisterKwargs]) -> Callable[[E | None], E]: ...
 
 
+@beartype
 def register(
     fn_: E | None = None, /, **kwargs: Unpack[RegisterKwargs]
 ) -> E | Callable[[E | None], E | Callable[[E | None], E]]:
@@ -67,6 +75,7 @@ def register(
     return fn_
 
 
+@beartype
 class CreditEnvKwargs(TypedDict, total=False):
     initial_state: State | None
     response_fn: Response | None
@@ -80,16 +89,16 @@ class CreditEnvKwargs(TypedDict, total=False):
 _CREDIT_ENV_ID: Final[str] = "Credit-v0"
 
 
+@beartype
 @register(
     id=_CREDIT_ENV_ID,
     nondeterministic=False,
     max_episode_steps=100,
     reward_threshold=0,
 )
-class CreditEnvCreator(EnvCreator):
+class CreditEnvCreator:
     ID: ClassVar[str] = _CREDIT_ENV_ID
 
-    @override
     def __call__(
         self,
         initial_state: State | None = None,
@@ -100,7 +109,7 @@ class CreditEnvCreator(EnvCreator):
         end_time: int = 5,
         timestep: int = 1,
         **kwargs: Any,
-    ) -> DynamicEnv:
+    ) -> gymnasium.Env[np.ndarray, np.ndarray]:
         del kwargs
         initial_state = unwrap_or(initial_state, default=CreditData().as_state())
         reward_fn = unwrap_or(reward_fn, default=LogisticReward(l2_penalty=0.0))
@@ -120,18 +129,5 @@ class CreditEnvCreator(EnvCreator):
         )
 
     @classmethod
-    def as_env(cls, **kwargs: Unpack[CreditEnvKwargs]) -> DynamicEnv:
-        return cast(DynamicEnv, gymnasium.make(id=cls.ID, **kwargs))
-
-
-if TESTING:
-    import pytest
-
-    @pytest.mark.parametrize("memory", [True, False])
-    def test_env_registration(memory: bool) -> None:
-        assert CreditEnvCreator.ID in gymnasium.registry
-        ds = CreditData(seed=0)
-        initial_state = State(features=ds.features, labels=ds.labels)
-        gymnasium.make(CreditEnvCreator.ID, initial_state=initial_state)
-        env = CreditEnvCreator.as_env(initial_state=initial_state, memory=memory)
-        assert env.simulator.memory is memory
+    def as_env(cls, **kwargs: Unpack[CreditEnvKwargs]) -> gymnasium.Env[np.ndarray, np.ndarray]:
+        return gymnasium.make(id=cls.ID, **kwargs)

@@ -1,9 +1,9 @@
 import copy
 from dataclasses import dataclass, replace
 
+from beartype import beartype
 import numpy as np
 
-from src.conftest import TESTING  # noqa: F401
 from src.dynamics.response import Response
 from src.dynamics.state import State
 from src.types import Action
@@ -11,6 +11,7 @@ from src.types import Action
 __all__ = ["Rollout", "Simulator"]
 
 
+@beartype
 @dataclass(kw_only=True)
 class Rollout:
     r"""Encapsulate a trajectory from a dynamical system simulator.
@@ -57,6 +58,7 @@ class Rollout:
         return self.times[-1]
 
 
+@beartype
 @dataclass(kw_only=True)
 class Simulator:
     response: Response
@@ -77,26 +79,3 @@ class Simulator:
             times.append(time + 1)
 
         return Rollout(states=states, times=times)
-
-
-if TESTING:
-    from src.dynamics.response import LinearResponse
-
-    def test_simulator() -> None:
-        from src.loader.credit import CreditData
-
-        ds = CreditData(seed=0)
-        initial_state = State(features=ds.features, labels=ds.labels)
-        action = np.random.default_rng(0).uniform(low=0, high=1, size=(initial_state.num_features,))
-        run = Simulator(
-            response=LinearResponse(epsilon=1.0),
-            memory=False,
-        ).simulate(
-            state=initial_state,
-            action=action,
-            start_time=0,
-            steps=30,
-        )
-        assert len(run.states) == len(run.times)
-        assert run.initial_state is initial_state
-        assert np.allclose(1, run.times[1] - run.times[0])

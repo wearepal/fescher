@@ -1,11 +1,15 @@
 from dataclasses import dataclass
+from typing import Annotated
 
+from beartype import beartype
+from beartype.vale import Is
+import gymnasium
 import numpy as np
 
-from src.dynamics.env import DynamicEnv
 from src.models.lr import Model, logistic_loss
 
 
+@beartype
 @dataclass(unsafe_hash=True, kw_only=True)
 class EpisodeRecord:
     loss_start: list[float]
@@ -16,8 +20,13 @@ class EpisodeRecord:
     theta: list[np.ndarray]
 
 
+@beartype
 def repeated_risk_minimization(
-    *, env: DynamicEnv, num_steps: int, lr: Model, l2_penalty: float
+    *,
+    env: gymnasium.Env[np.ndarray, np.ndarray],
+    num_steps: Annotated[int, Is[lambda x: x > 0]],
+    lr: Model,
+    l2_penalty: Annotated[float, Is[lambda x: x >= 0]],
 ) -> EpisodeRecord:
     """Run repeated risk minimization for num_iters steps"""
     # Track loss and accuracy before/after updating model on new distribution

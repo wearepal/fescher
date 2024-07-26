@@ -1,6 +1,7 @@
 from dataclasses import dataclass, fields
 from typing import TypeAlias, TypedDict, cast
 
+from beartype import beartype
 from gymnasium import spaces
 import numpy as np
 
@@ -12,11 +13,13 @@ Labels: TypeAlias = IntArray
 __all__ = ["State"]
 
 
+@beartype
 class StateDict(TypedDict):
     features: Features
     labels: Labels
 
 
+@beartype
 @dataclass(kw_only=True)
 class State:
     """Simulative state."""

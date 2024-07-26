@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import TypeAlias
+from beartype import beartype
 from typing_extensions import override
 
 from src.dynamics.state import State
@@ -16,11 +17,13 @@ __all__ = [
 ]
 
 
+@beartype
 class Reward(ABC):
     @abstractmethod
     def calculate(self, *, state: State, action: FloatArray) -> float: ...
 
 
+@beartype
 @dataclass(kw_only=True)
 class LogisticReward(Reward):
     l2_penalty: float = 0.0

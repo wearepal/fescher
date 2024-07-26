@@ -1,7 +1,8 @@
 """Utility functions for performative prediction demo."""
 
 from __future__ import annotations
-from typing import Protocol
+from abc import ABC
+from beartype import beartype
 from typing_extensions import Self
 
 from loguru import logger
@@ -18,7 +19,7 @@ __all__ = [
 ]
 
 
-class Model(Protocol):
+class Model(ABC):
     @property
     def l2_penalty(self) -> float: ...
     @property
@@ -51,7 +52,8 @@ class Model(Protocol):
     ) -> float: ...
 
 
-class Lr:
+@beartype
+class Lr(Model):
     def __init__(self, l2_penalty: float = 0.0, max_update_steps: int = 5_000) -> None:
         self._l2_penalty = l2_penalty
         self._weights: FloatArray | None = None
@@ -118,12 +120,13 @@ class Lr:
         )
 
 
+@beartype
 def logistic_loss(
     *,
     x: FloatArray,
     y: IntArray,
     weights: FloatArray,
-    l2_penalty: float = 0.0,
+    l2_penalty: float,
 ) -> float:
     """Compute the l2-penalized logistic loss function
 
@@ -145,6 +148,7 @@ def logistic_loss(
     return log_likelihood + regularization  # type: ignore
 
 
+@beartype
 def fit_lr_with_gd(
     *,
     x: FloatArray,
