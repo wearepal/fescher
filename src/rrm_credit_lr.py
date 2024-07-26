@@ -1,7 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass
 
-from beartype import beartype
 from hydra_zen import ZenStore, zen
 from loguru import logger
 from numpy import typing as npt

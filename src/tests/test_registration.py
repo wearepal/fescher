@@ -1,6 +1,9 @@
+from typing import cast
+
 import gymnasium
 import pytest
 
+from src.dynamics.env import DynamicEnv
 from src.dynamics.registration import CreditEnvCreator, make_env
 from src.dynamics.simulator import State
 from src.loader.credit import CreditData
@@ -13,6 +16,7 @@ def test_env_registration(memory: bool) -> None:
     initial_state = State(features=ds.features, labels=ds.labels)
     gymnasium.make(CreditEnvCreator.ID, initial_state=initial_state)
     env = CreditEnvCreator.as_env(initial_state=initial_state, memory=memory)
+    env = cast(DynamicEnv, env)
     assert env.simulator.memory is memory
 
 

@@ -1,7 +1,7 @@
 """Environment registration."""
 
 from collections.abc import Callable
-from typing import Any, ClassVar, Final, TypeVar, TypedDict, overload
+from typing import Any, ClassVar, Final, TypeVar, TypedDict, cast, overload
 from typing_extensions import Required, Unpack
 
 from beartype import beartype
@@ -15,6 +15,7 @@ from src.dynamics.env import DynamicEnv
 from src.dynamics.response import LinearResponse, Response
 from src.dynamics.reward import LogisticReward, Reward
 from src.dynamics.simulator import Simulator, State
+from src.dynamics.state import StateDict
 from src.loader.credit import CreditData
 
 __all__ = ["CreditEnvCreator"]
@@ -25,13 +26,14 @@ E = TypeVar("E", bound=type[EnvCreator])
 @beartype
 def make_env(
     *, initial_state: State, epsilon: float, memory: bool, changeable_features: list[int]
-) -> gymnasium.Env[npt.NDArray, npt.NDArray]:
+) -> gymnasium.Env[StateDict, npt.NDArray[np.float64]]:
     from src.dynamics.registration import CreditEnvCreator
 
     response_fn = LinearResponse(epsilon=epsilon, changeable_features=changeable_features)
     env = CreditEnvCreator.as_env(
         initial_state=initial_state, response_fn=response_fn, memory=memory
     )
+    env = cast(DynamicEnv, env)
     _ = env.reset()
     return env
 
@@ -108,7 +110,7 @@ class CreditEnvCreator:
         end_time: int = 5,
         timestep: int = 1,
         **kwargs: Any,
-    ) -> gymnasium.Env[np.ndarray, np.ndarray]:
+    ) -> gymnasium.Env[StateDict, npt.NDArray[np.float64]]:
         del kwargs
         initial_state = unwrap_or(initial_state, default=CreditData().as_state())
         reward_fn = unwrap_or(reward_fn, default=LogisticReward(l2_penalty=0.0))
@@ -128,5 +130,7 @@ class CreditEnvCreator:
         )
 
     @classmethod
-    def as_env(cls, **kwargs: Unpack[CreditEnvKwargs]) -> gymnasium.Env[np.ndarray, np.ndarray]:
+    def as_env(
+        cls, **kwargs: Unpack[CreditEnvKwargs]
+    ) -> gymnasium.Env[StateDict, npt.NDArray[np.float64]]:
         return gymnasium.make(id=cls.ID, **kwargs)

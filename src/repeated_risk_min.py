@@ -5,7 +5,9 @@ from beartype import beartype
 from beartype.vale import Is
 import gymnasium
 import numpy as np
+import numpy.typing as npt
 
+from src.dynamics.state import StateDict
 from src.models.lr import Model, logistic_loss
 
 
@@ -23,7 +25,7 @@ class EpisodeRecord:
 @beartype
 def repeated_risk_minimization(
     *,
-    env: gymnasium.Env[np.ndarray, np.ndarray],
+    env: gymnasium.Env[StateDict, npt.NDArray[np.float64]],
     num_steps: Annotated[int, Is[lambda x: x > 0]],
     lr: Model,
     l2_penalty: Annotated[float, Is[lambda x: x >= 0]],
