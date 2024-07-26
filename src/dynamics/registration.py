@@ -20,6 +20,17 @@ __all__ = ["CreditEnvCreator"]
 E = TypeVar("E", bound=type[EnvCreator])
 
 
+def make_env(*, initial_state: State, epsilon: float, memory: bool) -> DynamicEnv:
+    from src.dynamics.registration import CreditEnvCreator
+
+    response_fn = LinearResponse(epsilon=epsilon, changeable_features=[2, 6, 8])
+    env = CreditEnvCreator.as_env(
+        initial_state=initial_state, response_fn=response_fn, memory=memory
+    )
+    env.reset()
+    return env
+
+
 class RegisterKwargs(TypedDict, total=False):
     id: Required[str]
     reward_threshold: float | None
@@ -69,18 +80,6 @@ class CreditEnvKwargs(TypedDict, total=False):
 _CREDIT_ENV_ID: Final[str] = "Credit-v0"
 
 
-def make_env(*, initial_state: State, epsilon: float) -> DynamicEnv:
-    from src.dynamics.registration import CreditEnvCreator
-
-    response_fn = LinearResponse(epsilon=epsilon, changeable_features=[2, 6, 8])
-    env = CreditEnvCreator.as_env(
-        initial_state=initial_state,
-        response_fn=response_fn,
-    )
-    env.reset()
-    return env
-
-
 @register(
     id=_CREDIT_ENV_ID,
     nondeterministic=False,
@@ -126,10 +125,13 @@ class CreditEnvCreator(EnvCreator):
 
 
 if TESTING:
+    import pytest
 
-    def test_env_registration() -> None:
+    @pytest.mark.parametrize("memory", [True, False])
+    def test_env_registration(memory: bool) -> None:
         assert CreditEnvCreator.ID in gymnasium.registry
         ds = CreditData(seed=0)
         initial_state = State(features=ds.features, labels=ds.labels)
         gymnasium.make(CreditEnvCreator.ID, initial_state=initial_state)
-        CreditEnvCreator.as_env(initial_state=initial_state)
+        env = CreditEnvCreator.as_env(initial_state=initial_state, memory=memory)
+        assert env.simulator.memory is memory

@@ -36,7 +36,6 @@ class LinearResponse(Response):
         new_features = np.copy(features)
 
         neg_item_mask = np.dot(action[None, :], features[...].T)[0] < 0
-        # action_strat = action[changeable_features]
         assert not isinstance(changeable_features, slice)
         for changeable_feature in changeable_features:
             new_features[np.nonzero(neg_item_mask), changeable_feature] += (

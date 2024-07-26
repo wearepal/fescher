@@ -3,7 +3,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from src.dynamics.env import DynamicEnv
-from src.models.lr import Lr, logistic_loss
+from src.models.lr import Model, logistic_loss
 
 
 @dataclass(unsafe_hash=True, kw_only=True)
@@ -17,7 +17,7 @@ class EpisodeRecord:
 
 
 def repeated_risk_minimization(
-    *, env: DynamicEnv, num_steps: int, lr: Lr, l2_penalty: float
+    *, env: DynamicEnv, num_steps: int, lr: Model, l2_penalty: float
 ) -> EpisodeRecord:
     """Run repeated risk minimization for num_iters steps"""
     # Track loss and accuracy before/after updating model on new distribution

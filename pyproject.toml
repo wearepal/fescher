@@ -6,7 +6,6 @@ authors = [
     { name = "Predictive Analytics Lab (PAL)", email = "info@predictive-analytics-lab.com" },
 ]
 license = "Apache-2.0"
-packages = [{ include = "src" }]
 dependencies = [
     "tqdm>=4.66.4",
     "scikit-learn>=1.5.1",
@@ -24,7 +23,7 @@ classifiers = [
     "Operating System :: OS Independent",
     "Typing :: Typed",
 ]
-repository = "https://github.com/wearepal/fescher"
+urls = {github="https://github.com/wearepal/fescher"}
 readme = "README.md"
 requires-python = ">= 3.10, <3.12"
 

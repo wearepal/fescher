@@ -72,7 +72,7 @@ def make_gap_plots(
     epsilon_list: list[float | int],
     theta_gaps: list[list[float]],
 ):
-    processed_theta_gaps = [[x for x in tg if 0.0 < x < 0.0] for tg in theta_gaps]
+    processed_theta_gaps = [[x for x in tg if x > 0.0 or x < 0.0] for tg in theta_gaps]
     _, ax = plt.subplots(figsize=(10, 8))
 
     # Finally, we plot the distance between consecutive iterates. This is the
@@ -86,7 +86,6 @@ def make_gap_plots(
                 label=label,
                 linewidth=3,
                 alpha=1,
-                # markevery=[-1],
                 marker="*",
                 linestyle=(0, (1, 1)),
             )
@@ -96,7 +95,6 @@ def make_gap_plots(
                 label=label,
                 linewidth=3,
                 alpha=1,
-                # markevery=[-1],
                 marker="*",
                 linestyle="solid",
             )
@@ -115,19 +113,21 @@ def make_feature_weight_plot(
     epsilon_list: list[float | int],
     thetas: list[list[np.ndarray]],
     changeable_features: list[int],
+    show_bias: bool,
 ):
     _, axes = plt.subplots(nrows=2, ncols=2, figsize=(12, 8))
     # The performative risk is a surrogate for the underlying metric we care
     # about, accuracy. We can similarly plot accuracy during retraining.
+    include_bias = 0 if show_bias else 1
     for idx, epsilon in enumerate(epsilon_list):
         ax = axes[idx // 2][idx % 2]  # type: ignore
         ax.set_title(rf"Feature importance, $\epsilon$={epsilon}")
         theta = np.stack(thetas[idx], axis=1)
-        for i in range(theta.shape[0] - 1):
+        for i in range(theta.shape[0] - include_bias):
             if i in changeable_features:
-                ax.plot(theta[i], label=f"{i}*")
+                ax.plot(abs(theta[i]), label=f"{i}*")
             if i not in changeable_features:
-                ax.plot(theta[i], label=f"{i}", linestyle="dashed")
+                ax.plot(abs(theta[i]), label=f"{i}", linestyle="dashed")
 
         ax.set_xlabel("Step")
         ax.set_ylabel("Weight")
