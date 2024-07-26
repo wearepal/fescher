@@ -3,6 +3,8 @@ from dataclasses import dataclass
 from typing import TypeAlias
 from typing_extensions import override
 
+from beartype import beartype
+
 from src.dynamics.state import State
 from src.models.lr import logistic_loss
 from src.types import FloatArray
@@ -16,11 +18,13 @@ __all__ = [
 ]
 
 
+@beartype
 class Reward(ABC):
     @abstractmethod
     def calculate(self, *, state: State, action: FloatArray) -> float: ...
 
 
+@beartype
 @dataclass(kw_only=True)
 class LogisticReward(Reward):
     l2_penalty: float = 0.0

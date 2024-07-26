@@ -1,9 +1,10 @@
 """Utility functions for performative prediction demo."""
 
 from __future__ import annotations
-from dataclasses import dataclass, field
+from abc import ABC
 from typing_extensions import Self
 
+from beartype import beartype
 from loguru import logger
 import numpy as np
 from ranzen import some
@@ -18,10 +19,53 @@ __all__ = [
 ]
 
 
-@dataclass(kw_only=True)
-class Lr:
-    l2_penalty: float = 0.0
-    _weights: FloatArray | None = field(init=False, default=None)
+class Model(ABC):
+    @property
+    def l2_penalty(self) -> float: ...
+    @property
+    def weights(self) -> FloatArray: ...
+
+    @weights.setter
+    def weights(self, value: FloatArray) -> None: ...
+
+    def logits(self, features: FloatArray) -> FloatArray: ...
+
+    def preds(self, features: FloatArray) -> IntArray: ...
+
+    def acc(self, *, features: FloatArray, labels: IntArray) -> float: ...
+
+    def probs(self, features: FloatArray) -> FloatArray: ...
+
+    def fit(
+        self,
+        *,
+        x: FloatArray,
+        y: IntArray,
+        tol: float = 1e-7,
+    ) -> Self: ...
+
+    def loss(
+        self,
+        *,
+        x: FloatArray,
+        y: IntArray,
+    ) -> float: ...
+
+
+@beartype
+class Lr(Model):
+    def __init__(self, l2_penalty: float = 0.0, max_update_steps: int = 5_000) -> None:
+        self._l2_penalty = l2_penalty
+        self._weights: FloatArray | None = None
+        self._max_update_steps = max_update_steps
+
+    @property
+    def max_update_steps(self) -> int:
+        return self._max_update_steps
+
+    @property
+    def l2_penalty(self) -> float:
+        return self._l2_penalty
 
     @property
     def weights(self) -> FloatArray:
@@ -58,6 +102,7 @@ class Lr:
             tol=tol,
             l2_penalty=self.l2_penalty,
             theta_init=self._weights,
+            max_update_steps=self.max_update_steps,
         )
         return self
 
@@ -75,12 +120,13 @@ class Lr:
         )
 
 
+@beartype
 def logistic_loss(
     *,
     x: FloatArray,
     y: IntArray,
     weights: FloatArray,
-    l2_penalty: float = 0.0,
+    l2_penalty: float,
 ) -> float:
     """Compute the l2-penalized logistic loss function
 
@@ -102,11 +148,13 @@ def logistic_loss(
     return log_likelihood + regularization  # type: ignore
 
 
+@beartype
 def fit_lr_with_gd(
     *,
     x: FloatArray,
     y: IntArray,
     l2_penalty: float,
+    max_update_steps: int,
     tol: float = 1e-7,
     theta_init: FloatArray | None = None,
 ) -> FloatArray:
@@ -117,6 +165,7 @@ def fit_lr_with_gd(
 
     :param y: A [num_samples] vector of binary labels.
     :param l2_penalty: Regularization coefficient. Use l2_penalty=0 for no regularization.
+    :param max_update_steps: Maximum number of gradient descent steps to take
     :param tol:Stopping criteria for gradient descent
 
     :param theta_init: A [num_features] vector of classifier parameters to use a
@@ -147,9 +196,8 @@ def fit_lr_with_gd(
     loss_list = [prev_loss]
     i = 0
     gap = 1e30
-
     eta = eta_init
-    while gap > tol and i < 5_000:
+    while gap > tol and i < max_update_steps:
         # take gradients
         exp_tx = np.exp(x @ theta)
         c = exp_tx / (1 + exp_tx) - y

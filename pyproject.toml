@@ -6,7 +6,6 @@ authors = [
     { name = "Predictive Analytics Lab (PAL)", email = "info@predictive-analytics-lab.com" },
 ]
 license = "Apache-2.0"
-packages = [{ include = "src" }]
 dependencies = [
     "tqdm>=4.66.4",
     "scikit-learn>=1.5.1",
@@ -16,6 +15,7 @@ dependencies = [
     "loguru>=0.7.2",
     "ranzen>=2.5.1",
     "hydra-zen>=0.13.0",
+    "beartype>=0.18.5",
 ]
 classifiers = [
     "Programming Language :: Python :: 3.10",
@@ -24,7 +24,7 @@ classifiers = [
     "Operating System :: OS Independent",
     "Typing :: Typed",
 ]
-repository = "https://github.com/wearepal/fescher"
+urls = {github="https://github.com/wearepal/fescher"}
 readme = "README.md"
 requires-python = ">= 3.10, <3.12"
 
@@ -40,7 +40,7 @@ dev-dependencies = [
 ]
 
 [tool.rye.scripts]
-rrm = {cmd="python run/rrm_credit_lr.py"}
+rrm = {cmd="python -m src.rrm_credit_lr"}
 
 [tool.hatch.metadata]
 allow-direct-references = true

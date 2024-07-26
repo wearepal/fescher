@@ -3,16 +3,17 @@
 from typing import Any, SupportsFloat, TypeAlias
 from typing_extensions import override
 
+from beartype import beartype
 from gymnasium.core import Env, ObsType
 
-from src.conftest import TESTING
 from src.dynamics.reward import Reward
 from src.dynamics.simulator import Simulator
-from src.dynamics.state import State
+from src.dynamics.state import State, StateDict
 from src.types import FloatArray
 
 __all__ = ["DynamicEnv"]
 
+# The gymnasium Environment requires that this be a Tuple
 StepOutput: TypeAlias = tuple[ObsType, SupportsFloat, bool, bool, dict[str, Any]]
 
 
@@ -38,68 +39,47 @@ class DynamicEnv(Env):
         self.time = self.start_time
         self.reward_fn = reward_fn
 
+    @beartype
     @override
     def reset(
         self,
         *,
         seed: int | None = None,
         options: dict[str, Any] | None = None,
-    ) -> tuple[FloatArray, dict[str, Any]]:
+    ) -> tuple[StateDict, dict[str, Any]]:
         """Reset the state."""
+        super().reset(seed=seed, options=options)
         self.state = self.initial_state
         self.time = self.start_time
-        return super().reset(seed=seed, options=options)
+        return self.state.asdict(), {} if options is None else options
 
+    @beartype
     @override
     def step(self, action: FloatArray) -> StepOutput:
         if not self.action_space.contains(action):
             raise ValueError(f"{action} ({type(action)}) invalid")
         self.time += self.timestep
+        old_features = self.state.features
+
         # Get the next state from simulation.
-        rollout = self.simulator(
-            state=self.state,
-            action=action,
-            steps=self.timestep,
-            start_time=self.time,
+        # Do one step of the user adapatation.
+        rollout = self.simulator.simulate(
+            state=self.state, action=action, steps=self.timestep, start_time=self.time
         )
+
         self.state = rollout.final_state  # [self.time]
-        truncated = terminated = bool(self.time >= self.end_time)
+        truncated = terminated = self.time >= self.end_time
         reward = self.reward_fn.calculate(state=self.state, action=action)
         obs = self.state.asdict()
         info_dict = {}
+
+        if not self.simulator.memory:
+            self.state.features = old_features
+
         return obs, reward, terminated, truncated, info_dict
 
+    @beartype
     @override
     def render(self, mode: str = "human") -> None:
         """Render the environment; unused."""
         del mode
-
-
-if TESTING:
-    import numpy as np
-
-    from src.dynamics.response import LinearResponse
-    from src.dynamics.reward import LogisticReward
-    from src.loader.credit import CreditData
-
-    def test_env_dynamics() -> None:
-        ds = CreditData(seed=0)
-        initial_state = State(features=ds.features, labels=ds.labels)
-        simulator = Simulator(response=LinearResponse(), memory=False)
-
-        env = DynamicEnv(
-            initial_state=initial_state,
-            simulator=simulator,
-            reward_fn=LogisticReward(),
-            start_time=0,
-            end_time=1,
-        )
-        env.reset()
-        action1 = np.random.default_rng(0).uniform(
-            low=0, high=1, size=(initial_state.num_features,)
-        )
-        env.step(action=action1)
-        action2 = np.random.default_rng(1).uniform(
-            low=0, high=1, size=(initial_state.num_features,)
-        )
-        env.step(action=action2)

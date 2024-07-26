@@ -13,6 +13,8 @@
 antlr4-python3-runtime==4.9.3
     # via hydra-core
     # via omegaconf
+beartype==0.18.5
+    # via fescher
 cloudpickle==3.0.0
     # via gymnasium
 contourpy==1.2.1

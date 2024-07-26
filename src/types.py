@@ -9,6 +9,6 @@ __all__ = [
     "IntArray",
 ]
 
-FloatArray: TypeAlias = npt.NDArray[np.floating]
-IntArray: TypeAlias = npt.NDArray[np.integer]
-Action: TypeAlias = npt.NDArray[np.floating]
+FloatArray: TypeAlias = npt.NDArray[np.float64]
+IntArray: TypeAlias = npt.NDArray[np.uint8]
+Action: TypeAlias = npt.NDArray[np.float64]

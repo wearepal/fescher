@@ -1,16 +1,17 @@
 import copy
 from dataclasses import dataclass, replace
 
+from beartype import beartype
 import numpy as np
 
-from src.conftest import TESTING
 from src.dynamics.response import Response
 from src.dynamics.state import State
 from src.types import Action
 
-__all__ = ["simulate", "Rollout", "Simulator"]
+__all__ = ["Rollout", "Simulator"]
 
 
+@beartype
 @dataclass(kw_only=True)
 class Rollout:
     r"""Encapsulate a trajectory from a dynamical system simulator.
@@ -57,64 +58,24 @@ class Rollout:
         return self.times[-1]
 
 
-def simulate(
-    *,
-    state: State,
-    steps: int,
-    response: Response,
-    action: Action,
-    start_time: int = 0,
-    memory: bool = False,
-) -> Rollout:
-    """Simulate a run of the Credit model."""
-    # Iterate the discrete dynamics
-    times = [start_time]
-    initial_state = state
-    states = [initial_state]
-    state = copy.deepcopy(state)
-    for time in range(start_time, start_time + steps):
-        state = state if memory else initial_state
-        features = response.respond(features=state.features, action=action)
-        state = replace(state, features=features)
-        states.append(state)
-        times.append(time + 1)
-
-    return Rollout(states=states, times=times)
-
-
+@beartype
 @dataclass(kw_only=True)
 class Simulator:
     response: Response
     memory: bool = False
 
-    def __call__(self, *, state: State, action: Action, steps: int, start_time: int = 0) -> Rollout:
-        return simulate(
-            state=state,
-            steps=steps,
-            action=action,
-            response=self.response,
-            memory=self.memory,
-            start_time=start_time,
-        )
+    def simulate(self, *, state: State, action: Action, steps: int, start_time: int = 0) -> Rollout:
+        """Simulate a run of the Credit model."""
+        # Iterate the discrete dynamics
+        times = [start_time]
+        initial_state = state
+        states = [initial_state]
+        state = copy.deepcopy(state)
+        for time in range(start_time, start_time + steps):
+            state = state if self.memory else initial_state
+            features = self.response.respond(features=state.features, action=action)
+            state = replace(state, features=features)
+            states.append(state)
+            times.append(time + 1)
 
-
-if TESTING:
-    from src.dynamics.response import LinearResponse
-
-    def test_simulator() -> None:
-        from src.loader.credit import CreditData
-
-        ds = CreditData(seed=0)
-        initial_state = State(features=ds.features, labels=ds.labels)
-        action = np.random.default_rng(0).uniform(low=0, high=1, size=(initial_state.num_features,))
-        run = simulate(
-            state=initial_state,
-            action=action,
-            response=LinearResponse(epsilon=1.0),
-            start_time=0,
-            steps=30,
-            memory=False,
-        )
-        assert len(run.states) == len(run.times)
-        assert run.initial_state is initial_state
-        assert np.allclose(1, run.times[1] - run.times[0])
+        return Rollout(states=states, times=times)

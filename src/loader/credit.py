@@ -3,6 +3,7 @@
 from pathlib import Path
 from typing import Protocol
 
+from beartype import beartype
 import numpy as np
 import polars as pl
 from sklearn import preprocessing
@@ -30,6 +31,7 @@ class Data(Protocol):
     def load(self) -> tuple[FloatArray, FloatArray]: ...
 
 
+@beartype
 class CreditData:
     """Class to lazily load the credit dataset."""
 
@@ -66,7 +68,7 @@ class CreditData:
         """Compute number of features for each agent."""
         return self.features.shape[1]
 
-    def load(self) -> tuple[FloatArray, FloatArray]:
+    def load(self) -> tuple[FloatArray, IntArray]:
         """Load, preprocess and class-balance the credit data."""
         from zipfile import ZipFile
 
@@ -84,8 +86,8 @@ class CreditData:
         # zero mean, unit variance
         features = preprocessing.scale(data.to_numpy())
         # add bias term
-        features = np.append(features, np.ones((features.shape[0], 1)), axis=1)  # type: ignore
-        outcomes = outcomes.to_numpy()
+        features = np.append(features, np.ones((features.shape[0], 1)), axis=1)
+        outcomes = outcomes.to_numpy().astype(np.uint8)
 
         # balance classes
         default_indices = np.nonzero(outcomes == 1)[0]

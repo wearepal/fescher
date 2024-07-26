@@ -3,6 +3,8 @@ from dataclasses import dataclass
 from functools import partial
 from typing import TypeVar
 
+from beartype import beartype
+
 from src.types import FloatArray
 
 __all__ = ["Intervention", "NoIntervention"]
@@ -22,6 +24,7 @@ class Intervention:
 T = TypeVar("T")
 
 
+@beartype
 def identity(x: T) -> T:
     return x
 
