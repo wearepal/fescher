@@ -14,7 +14,6 @@ from src.plotting import make_acc_plots, make_feature_weight_plot, make_gap_plot
 from src.repeated_risk_min import repeated_risk_minimization
 
 
-@beartype
 @dataclass
 class ExperimentSettings:
     memory: bool
@@ -23,7 +22,6 @@ class ExperimentSettings:
     changeable_features: list[int]
 
 
-@beartype
 @dataclass
 class PlotSettings:
     show_bias: bool
@@ -94,7 +92,7 @@ def main(dataset: Data, experiment: ExperimentSettings, model: Model, plot: Plot
             initial_state=initial_state,
             epsilon=epsilon,
             memory=experiment.memory,
-            changeable_features=experiment.changeable_features,
+            changeable_features=list(experiment.changeable_features),
         )
         logger.info(f"Running retraining for epsilon {epsilon:.2f}")
         record = repeated_risk_minimization(

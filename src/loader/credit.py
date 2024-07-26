@@ -87,7 +87,7 @@ class CreditData:
         features = preprocessing.scale(data.to_numpy())
         # add bias term
         features = np.append(features, np.ones((features.shape[0], 1)), axis=1)
-        outcomes = outcomes.to_numpy()
+        outcomes = outcomes.to_numpy().astype(np.uint8)
 
         # balance classes
         default_indices = np.nonzero(outcomes == 1)[0]

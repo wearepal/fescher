@@ -10,5 +10,5 @@ __all__ = [
 ]
 
 FloatArray: TypeAlias = npt.NDArray[np.float64]
-IntArray: TypeAlias = npt.NDArray[np.int64]
+IntArray: TypeAlias = npt.NDArray[np.uint8]
 Action: TypeAlias = npt.NDArray[np.float64]
