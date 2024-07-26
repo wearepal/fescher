@@ -26,15 +26,15 @@ def test_simulator(mock_state: State) -> None:
 def mock_states():
     state1 = State(
         features=np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float64),
-        labels=np.array([1, 0], dtype=np.int64),
+        labels=np.array([1, 0], dtype=np.uint8),
     )
     state2 = State(
         features=np.array([[5.0, 6.0], [7.0, 8.0]], dtype=np.float64),
-        labels=np.array([1, 1], dtype=np.int64),
+        labels=np.array([1, 1], dtype=np.uint8),
     )
     state3 = State(
         features=np.array([[9.0, 10.0], [11.0, 12.0]], dtype=np.float64),
-        labels=np.array([0, 1], dtype=np.int64),
+        labels=np.array([0, 1], dtype=np.uint8),
     )
     return [state1, state2, state3]
 
@@ -61,7 +61,7 @@ def test_rollout_init(valid_rollout: Rollout):
             [
                 State(
                     features=np.array([[1.0, 2.0]], dtype=np.float64),
-                    labels=np.array([1], dtype=np.int64),
+                    labels=np.array([1], dtype=np.uint8),
                 )
             ],
             [],
@@ -71,7 +71,7 @@ def test_rollout_init(valid_rollout: Rollout):
             [
                 State(
                     features=np.array([[1.0, 2.0]], dtype=np.float64),
-                    labels=np.array([1], dtype=np.int64),
+                    labels=np.array([1], dtype=np.uint8),
                 )
             ],
             [0, 5],

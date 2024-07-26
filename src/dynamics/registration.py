@@ -1,13 +1,12 @@
 """Environment registration."""
 
 from collections.abc import Callable
-from typing import Any, ClassVar, Final, TypeVar, TypedDict, cast, overload
-from beartype import beartype
-from typing_extensions import Required, Unpack, override
+from typing import Any, ClassVar, Final, TypeVar, TypedDict, overload
+from typing_extensions import Required, Unpack
 
+from beartype import beartype
 import gymnasium
 from gymnasium.envs.registration import EnvCreator
-from gymnasium.wrappers.time_limit import TimeLimit
 import numpy as np
 from numpy import typing as npt
 from ranzen import unwrap_or

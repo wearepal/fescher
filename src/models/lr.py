@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 from abc import ABC
-from beartype import beartype
 from typing_extensions import Self
 
+from beartype import beartype
 from loguru import logger
 import numpy as np
 from ranzen import some

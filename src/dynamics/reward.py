@@ -1,8 +1,9 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import TypeAlias
-from beartype import beartype
 from typing_extensions import override
+
+from beartype import beartype
 
 from src.dynamics.state import State
 from src.models.lr import logistic_loss

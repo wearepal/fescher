@@ -15,7 +15,7 @@ def test_linear_response():
     new_features = response_fn.respond(features=features, action=action)
     assert new_features.shape == features.shape
 
-    changeable_features = np.array([0, 2])
+    changeable_features = np.array([0, 2], dtype=np.uint8)
     response_fn = LinearResponse(epsilon=1.0, changeable_features=changeable_features)
     new_features = response_fn.respond(features=features, action=action)
     assert new_features.shape == features.shape
@@ -37,7 +37,7 @@ def test_rir_response():
     with pytest.raises(AssertionError):
         assert np.testing.assert_array_equal(features, new_features)
 
-    changeable_features = np.array([0, 2])
+    changeable_features = np.array([0, 2], dtype=np.uint8)
     response_fn = RIRResponse(epsilon=1.0, changeable_features=changeable_features)
     new_features = response_fn(features=features, action=action)
 

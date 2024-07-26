@@ -1,6 +1,4 @@
 from __future__ import annotations
-import sys
-from typing import Final
 from typing_extensions import Self
 
 import numpy as np
@@ -15,7 +13,7 @@ from src.types import FloatArray, IntArray
 @pytest.fixture
 def mock_state():
     features = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float64)
-    labels = np.array([1, 0], dtype=np.int64)
+    labels = np.array([1, 0], dtype=np.uint8)
     return State(features=features, labels=labels)
 
 
