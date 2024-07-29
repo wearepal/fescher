@@ -19,7 +19,7 @@ class EpisodeRecord:
     acc_start: list[float]
     acc_end: list[float]
     theta_gap: list[float]
-    theta: list[np.ndarray]
+    theta: list[npt.NDArray[np.float64]]
 
 
 @beartype

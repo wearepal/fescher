@@ -33,7 +33,24 @@ class Data(Protocol):
 
 @beartype
 class CreditData:
-    """Class to lazily load the credit dataset."""
+    """Class to lazily load the credit dataset.
+
+    Features: {
+        0: RevolvingUtilizationOfUnsecuredLines,
+        1: age,
+        2: NumberOfTime30-59DaysPastDueNotWorse,
+        3: DebtRatio,
+        4: MonthlyIncome,
+        5: NumberOfOpenCreditLinesAndLoans,
+        6: NumberOfTimes90DaysLate,
+        7: NumberRealEstateLoansOrLines,
+        8: NumberRealEstateLoansOrLines,
+        9: NumberOfDependents,
+        10: Bias term (added by the framework)
+    }
+
+    Changeable features in performative prediction paper: [0, 5, 7]
+    """
 
     def __init__(self, seed: int | None = None) -> None:
         self.filepath = (Path(__file__).parent / "credit_data").with_suffix(".zip")

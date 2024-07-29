@@ -19,8 +19,8 @@ class Response(ABC):
 @beartype
 @dataclass(kw_only=True)
 class LinearResponse(Response):
-    changeable_features: IntArray | slice | list[int] | None = None
-    epsilon: float = 1.0
+    changeable_features: list[int] | None = None
+    epsilon: dict[int, float] | None = None
 
     def respond(
         self,
@@ -35,13 +35,15 @@ class LinearResponse(Response):
                 "numbering the number of columns in 'features'"
             )
         changeable_features = unwrap_or(self.changeable_features, default=[])
+        epsilon_map = unwrap_or(self.epsilon, default={a: 1 for a in list(changeable_features)})
         new_features = np.copy(features)
 
         neg_item_mask = np.dot(action[None, :], features[...].T)[0] < 0
         assert not isinstance(changeable_features, slice)
         for changeable_feature in changeable_features:
+            weight = epsilon_map[changeable_feature]
             new_features[np.nonzero(neg_item_mask), changeable_feature] += (
-                self.epsilon / np.linalg.norm(action)
+                weight / np.linalg.norm(action)
             ) * action[changeable_feature]
         return new_features
 
