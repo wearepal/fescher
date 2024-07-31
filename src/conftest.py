@@ -19,7 +19,7 @@ def mock_state():
 
 @pytest.fixture
 def mock_env(mock_state: State):
-    return make_env(initial_state=mock_state, epsilon=0.1, memory=False, changeable_features=[0])
+    return make_env(initial_state=mock_state, epsilon=None, memory=False)
 
 
 @pytest.fixture

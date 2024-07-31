@@ -9,7 +9,7 @@ from src.dynamics.state import State
 def test_simulator(mock_state: State) -> None:
     action = np.random.default_rng(0).uniform(low=0, high=1, size=(mock_state.num_features,))
     run = Simulator(
-        response=LinearResponse(epsilon=1.0),
+        response=LinearResponse(epsilon={a: 1.0 for a in range(2)}),
         memory=False,
     ).simulate(
         state=mock_state,
