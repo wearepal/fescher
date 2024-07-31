@@ -70,7 +70,7 @@ class RIRResponse:
         features: FloatArray,
         action: FloatArray,
     ) -> FloatArray:
-        epsilon_map = unwrap_or(self.epsilon, default={a: 1.0 for a in range(len(features))})
+        epsilon_map = unwrap_or(self.epsilon, default={a: 0.0 for a in range(features.shape[1])})
         return self.rir_response(
             features=features,
             action=action,

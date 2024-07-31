@@ -118,9 +118,9 @@ def make_feature_weight_plot(
     theta = np.stack(thetas, axis=1)
     for i in range(theta.shape[0] - include_bias):
         if i in epsilon and epsilon[i] > 0:
-            ax.plot(abs(theta[i]), label=f"{i}", linestyle="dashed")
-        else:
             ax.plot(abs(theta[i]), label=f"{i}*")
+        else:
+            ax.plot(abs(theta[i]), label=f"{i}", linestyle="dashed")
 
     ax.set_xlabel("Step")
     ax.set_ylabel("Weight")

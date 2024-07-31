@@ -34,7 +34,7 @@ exp_store(
     ExperimentSettings,
     memory=False,
     num_steps=10,
-    epsilons={i: 0 if i in [2, 6, 8] else 1 for i in range(10)},
+    epsilons={i: 1.0 for i in [2, 6, 8]},
     name="base",
 )
 
@@ -42,7 +42,7 @@ exp_store(
     ExperimentSettings,
     memory=False,
     num_steps=10,
-    epsilons={i: 0 if i in [0, 5, 7] else 1 for i in range(10)},
+    epsilons={i: 1.0 for i in [0, 5, 7]},
     name="paper",
 )
 
