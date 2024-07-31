@@ -38,6 +38,8 @@ class LinearResponse(Response):
 
         neg_item_mask = np.dot(action[None, :], features[...].T)[0] < 0
         for feature, weight in epsilon_map.items():
+            # TODO: Make a decision on the normalisation.
+            # In Perdomo et al this is not present, but some sort of normalisation (not neccessarily this) might make sense.
             new_features[np.nonzero(neg_item_mask), feature] += (
                 weight / np.linalg.norm(action)
             ) * action[feature]
