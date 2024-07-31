@@ -18,7 +18,6 @@ class ExperimentSettings:
     memory: bool
     num_steps: int
     epsilons: dict[int, float]
-    changeable_features: list[int]
 
 
 @dataclass
@@ -35,16 +34,15 @@ exp_store(
     ExperimentSettings,
     memory=False,
     num_steps=10,
-    epsilons={a: 1 for a in range(10)},
-    changeable_features=[2, 6, 8],
+    epsilons={i: 0 if i in [2, 6, 8] else 1 for i in range(10)},
     name="base",
 )
+
 exp_store(
     ExperimentSettings,
     memory=False,
     num_steps=10,
-    epsilons={a: 1 for a in range(10)},
-    changeable_features=[0, 5, 7],
+    epsilons={i: 0 if i in [0, 5, 7] else 1 for i in range(10)},
     name="paper",
 )
 
@@ -91,13 +89,11 @@ def main(dataset: Data, experiment: ExperimentSettings, model: Model, plot: Plot
         initial_state=initial_state,
         epsilon=dict(experiment.epsilons),
         memory=experiment.memory,
-        changeable_features=list(experiment.changeable_features),
     )
     record = repeated_risk_minimization(
         env=env, lr=lr, num_steps=experiment.num_steps, l2_penalty=model.l2_penalty
     )
 
-    changeable_features = env.simulator.response.changeable_features  # type: ignore
     out_dir = Path(hydra.core.hydra_config.HydraConfig.get().runtime.output_dir)  # type: ignore
     make_risk_plots(
         epsilon=experiment.epsilons,
@@ -117,7 +113,6 @@ def main(dataset: Data, experiment: ExperimentSettings, model: Model, plot: Plot
     make_feature_weight_plot(
         epsilon=experiment.epsilons,
         thetas=record.theta,
-        changeable_features=changeable_features,
         show_bias=plot.show_bias,
         out_dir=out_dir,
     )

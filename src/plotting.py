@@ -106,7 +106,6 @@ def make_feature_weight_plot(
     *,
     epsilon: dict[int, float],
     thetas: list[npt.NDArray[np.float64]],
-    changeable_features: list[int],
     show_bias: bool,
     out_dir: Path,
 ):
@@ -118,10 +117,10 @@ def make_feature_weight_plot(
     ax.set_title(rf"Feature importance, $\epsilon$={epsilon}")
     theta = np.stack(thetas, axis=1)
     for i in range(theta.shape[0] - include_bias):
-        if i in changeable_features:
-            ax.plot(abs(theta[i]), label=f"{i}*")
-        if i not in changeable_features:
+        if i in epsilon and epsilon[i] > 0:
             ax.plot(abs(theta[i]), label=f"{i}", linestyle="dashed")
+        else:
+            ax.plot(abs(theta[i]), label=f"{i}*")
 
     ax.set_xlabel("Step")
     ax.set_ylabel("Weight")

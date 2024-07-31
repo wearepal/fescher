@@ -19,7 +19,6 @@ class Response(ABC):
 @beartype
 @dataclass(kw_only=True)
 class LinearResponse(Response):
-    changeable_features: list[int] | None = None
     epsilon: dict[int, float] | None = None
 
     def respond(
@@ -34,17 +33,14 @@ class LinearResponse(Response):
                 "'action' should correspond to the feature weights and thus must have entries "
                 "numbering the number of columns in 'features'"
             )
-        changeable_features = unwrap_or(self.changeable_features, default=[])
-        epsilon_map = unwrap_or(self.epsilon, default={a: 1 for a in list(changeable_features)})
+        epsilon_map = unwrap_or(self.epsilon, default={a: 1 for a in range(len(features))})
         new_features = np.copy(features)
 
         neg_item_mask = np.dot(action[None, :], features[...].T)[0] < 0
-        assert not isinstance(changeable_features, slice)
-        for changeable_feature in changeable_features:
-            weight = epsilon_map[changeable_feature]
-            new_features[np.nonzero(neg_item_mask), changeable_feature] += (
+        for feature, weight in epsilon_map.items():
+            new_features[np.nonzero(neg_item_mask), feature] += (
                 weight / np.linalg.norm(action)
-            ) * action[changeable_feature]
+            ) * action[feature]
         return new_features
 
 
