@@ -5,7 +5,7 @@ from beartype import beartype
 import numpy as np
 from ranzen import unwrap_or
 
-from src.types import FloatArray, IntArray
+from src.types import FloatArray
 
 __all__ = ["Response", "LinearResponse"]
 
