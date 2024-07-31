@@ -25,11 +25,14 @@ E = TypeVar("E", bound=type[EnvCreator])
 
 @beartype
 def make_env(
-    *, initial_state: State, epsilon: dict[int, float], memory: bool
+    *, initial_state: State, epsilon: dict[int, float] | None, memory: bool
 ) -> gymnasium.Env[StateDict, npt.NDArray[np.float64]]:
     from src.dynamics.registration import CreditEnvCreator
 
-    response_fn = LinearResponse(epsilon=epsilon)
+    new_epsilon = unwrap_or(
+        epsilon, default={a: 0.0 for a in range(initial_state.features.shape[1])}
+    )
+    response_fn = LinearResponse(epsilon=new_epsilon)
     env = CreditEnvCreator.as_env(
         initial_state=initial_state, response_fn=response_fn, memory=memory
     )

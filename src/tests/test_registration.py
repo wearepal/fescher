@@ -20,15 +20,20 @@ def test_env_registration(memory: bool) -> None:
     assert env.simulator.memory is memory
 
 
-@pytest.mark.parametrize("epsilon, memory", [(0.1, True), (0.0, False), (1.0, True)])
+@pytest.mark.parametrize(
+    "epsilon, memory",
+    [
+        ({a: 0.1 for a in range(2)}, True),
+        ({a: 0.0 for a in range(2)}, False),
+        ({a: 1.0 for a in range(2)}, True),
+    ],
+)
 def test_make_env(
     mock_state: State,  # noqa: F811
-    epsilon: float,
+    epsilon: dict[int, float],
     memory: bool,
 ):
     # Arrange - mock_state fixture provides initial_state
     # Act
-    env = make_env(
-        initial_state=mock_state, epsilon=epsilon, memory=memory, changeable_features=[0]
-    )
+    env = make_env(initial_state=mock_state, epsilon=epsilon, memory=memory)
     assert env is not None
